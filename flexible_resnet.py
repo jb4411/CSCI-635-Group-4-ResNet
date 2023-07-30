@@ -167,6 +167,10 @@ class Trainer:
 
     def train_model(self, num_epochs: int = 10, adjust_lr=False):
         self._conf["epochs"] = num_epochs
+        if num_epochs == 1:
+            text = " (1 epoch)"
+        else:
+            text = f" ({num_epochs} epochs)"
 
         t_range = range(len(self._data_loaders[Phase.TRAIN]))
         v_range = range(len(self._data_loaders[Phase.VALID]))
@@ -175,7 +179,7 @@ class Trainer:
         t_acc = [0.0, 0.0, 0.0]
         v_acc = [0.0, 0.0, 0.0]
         acc_idx = 0
-        with experiment.record(name=self.run_name, token=self.token):
+        with experiment.record(name=self.run_name + text, token=self.token):
             for epoch in monit.loop(range(num_epochs)):
                 self._train_seen = 0
                 self._train_correct = 0
