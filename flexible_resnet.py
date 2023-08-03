@@ -358,6 +358,7 @@ def get_model(num_layers, device, block_type: Type[Union[BasicBlock, Bottleneck]
 
 def show_training_time(start, end):
     text = "Training took"
+    text = "Training time ="
     diff = end - start
 
     # milliseconds
@@ -372,14 +373,19 @@ def show_training_time(start, end):
         print(f"{text} {diff}secs")
         return
 
-    hr = 60
+    hr = 60 * mn
     # minutes and seconds
-    if diff < hr * mn:
-        print(f"{text} {int(diff / hr)}mins {diff % mn}secs")
+    if diff < hr:
+        minutes = int(diff / mn)
+        print(f"{text} {minutes} minute{'s' if minutes > 1 else ''} {diff % mn} seconds")
         return
 
     # hours, minutes and seconds
-    print(f"{text} {int(diff / (hr * mn))}hrs {int((diff % hr) / mn)}mins {diff % mn}secs")
+    hours = int(diff / hr)
+    h_suffix = 's' if hours > 1 else ''
+    minutes = int((diff % hr) / mn)
+    m_suffix = 's' if minutes > 1 else ''
+    print(f"{text} {hours} hour{h_suffix} {minutes} minute{m_suffix} {diff % mn} seconds")
 
 
 def main():
