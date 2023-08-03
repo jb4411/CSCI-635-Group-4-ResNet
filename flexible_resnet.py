@@ -14,7 +14,7 @@ from torchvision.models import ResNet
 from torchvision.models.resnet import BasicBlock, Bottleneck, _resnet
 
 from labml import tracker, experiment, monit, logger
-
+from labml_helpers.device import DeviceInfo
 
 class DataSet(Enum):
     CIFAR10 = 1
@@ -33,7 +33,8 @@ class Phase(Enum):
     VALID = 2
 
 
-def setup_dataset(dataset: DataSet, train_batch_size, valid_batch_size):
+def setup_dataset(dataset: DataSet, train_batch_size, valid_batch_size,
+                  train_loader_shuffle=True, valid_loader_shuffle=False):
     if dataset == DataSet.CIFAR10:
         train_data = datasets.CIFAR10('./data', train=True, download=True,
                                       transform=transforms.Compose([
@@ -68,11 +69,11 @@ def setup_dataset(dataset: DataSet, train_batch_size, valid_batch_size):
 
     # Training and validation data loaders
     data_loaders = {
-        Phase.TRAIN: torch.utils.data.DataLoader(train_data, batch_size=train_batch_size, shuffle=True),
-        Phase.VALID: torch.utils.data.DataLoader(val_data, batch_size=valid_batch_size, shuffle=False)
+        Phase.TRAIN: torch.utils.data.DataLoader(train_data, batch_size=train_batch_size, shuffle=train_loader_shuffle),
+        Phase.VALID: torch.utils.data.DataLoader(val_data, batch_size=valid_batch_size, shuffle=valid_loader_shuffle)
     }
 
-    return data_loaders, train_data, val_data
+    return data_loaders, (train_data, val_data, train_loader_shuffle, valid_loader_shuffle)
 
 
 class Trainer:
@@ -90,10 +91,14 @@ class Trainer:
     train_data: VisionDataset
     # Train batch size
     train_batch_size: int = 32
+    # Whether train data is reshuffled every epoch
+    train_loader_shuffle = True
     # Valid dataset
     val_data: VisionDataset
     # Valid batch size
     valid_batch_size: int = 128
+    # Whether valid data is reshuffled every epoch
+    valid_loader_shuffle = False
     # Loss function
     criterion: _Loss = nn.CrossEntropyLoss()
     # Optimizer
@@ -111,6 +116,7 @@ class Trainer:
     # Local webapi url or LabML token
     token = 'http://localhost:5005/api/v1/track?'
     # internal
+    _device_info: DeviceInfo
     _data_loaders: dict
     _train_seen: int = 0
     _train_correct: int = 0
@@ -119,14 +125,15 @@ class Trainer:
     _conf: dict
 
     def __init__(self, dataset: DataSet, num_layers: int, run_name=None):
+        self._device_info = DeviceInfo(use_cuda=torch.cuda.is_available(), cuda_device=0)
         self.dataset = dataset
         self.num_layers = num_layers
         if run_name is None:
             self.run_name = f"ResNet{num_layers} - {str(self.dataset).replace('DataSet.', '')}"
         else:
             self.run_name = run_name
-        self._data_loaders, self.train_data, self.val_data = setup_dataset(self.dataset, self.train_batch_size,
-                                                                           self.valid_batch_size)
+        self._data_loaders, cfg = setup_dataset(self.dataset, self.train_batch_size, self.valid_batch_size)
+        self.train_data, self.val_data, self.train_loader_shuffle, self.valid_loader_shuffle = cfg
         self.model, self.layers, self.block_type = get_model(self.num_layers, self.device, block_type=self.block_type)
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
                                    weight_decay=self.weight_decay)
@@ -143,7 +150,7 @@ class Trainer:
         self._conf = {
             "bottlenecks": None if self.block_type == BasicBlock else [64, 128, 256, 512],
             "dataset_name": str(self.dataset).replace("DataSet.", ""),
-            "device": self.device,
+            "device": self._device_info,
             # "device.device_info": ,
             # "first_kernel_size": ,
             # "inner_iterations": ,
@@ -154,9 +161,19 @@ class Trainer:
             "n_blocks": self.layers,
             # "n_channels": ,
             "optimizer": self.optimizer,
-            "train_dataset": self.train_data,
-            "valid_dataset": self.val_data,
+            "optimizer.learning_rate": self.lr,
+            "optimizer.momentum": self.momentum,
+            "optimizer.weight_decay": self.weight_decay,
 
+
+
+            "train_dataset": self.train_data,
+            "train_batch_size": self.train_batch_size,
+            "train_loader_shuffle": self.train_loader_shuffle,
+
+            "valid_dataset": self.val_data,
+            "valid_batch_size": self.valid_batch_size,
+            "valid_loader_shuffle": self.valid_loader_shuffle,
             #
             # "dataset": dataset,
             # "num_layers": num_layers,
@@ -184,7 +201,7 @@ class Trainer:
         t_acc = [0.0, 0.0, 0.0]
         v_acc = [0.0, 0.0, 0.0]
         acc_idx = 0
-        with experiment.record(name=self.run_name + text, token=self.token):
+        with experiment.record(name=self.run_name + text, token=self.token, exp_conf=self._conf):
             for epoch in monit.loop(range(num_epochs)):
                 self._train_seen = 0
                 self._train_correct = 0
@@ -340,7 +357,7 @@ def get_model(num_layers, device, block_type: Type[Union[BasicBlock, Bottleneck]
 
 def main():
     # Number of epochs
-    num_epochs = 50
+    num_epochs = 10
     # Dataset
     dataset = DataSet.STL10
     # Number of layers for the resnet model

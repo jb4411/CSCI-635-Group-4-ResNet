@@ -1,0 +1,2 @@
+web_api: 'http://localhost:5005/api/v1/track?'
+web_api_frequency: 30
