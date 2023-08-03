@@ -408,9 +408,7 @@ def main():
     # Number of layers for the resnet model
     num_layers = 18
 
-    lr_milestones = ([0, 5, 24], [0, 0.4, 0])
-
-    lr_milestones = ([5, 0.4], [24, 0])
+    lr_milestones = [(5, 0.4), (24, 0)]
 
     trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones)
     trainer.train_batch_size = 512
