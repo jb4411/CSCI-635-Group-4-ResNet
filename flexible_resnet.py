@@ -356,6 +356,39 @@ def get_model(num_layers, device, block_type: Type[Union[BasicBlock, Bottleneck]
     return model, layers, block_type
 
 
+def show_training_time(start, end):
+    text = "Training took"
+    diff = end - start
+
+    ns = 1000000
+    # nanoseconds
+    if diff < ns:
+        print(f"{text} {diff}ns")
+        return
+    diff = diff / ns
+
+    ms = 1000
+    # milliseconds
+    if diff < ms:
+        print(f"{text} {diff}ms")
+        return
+    diff = diff / ms
+
+    ss = 60
+    # seconds
+    if diff < ss:
+        print(f"{text} {diff}secs")
+        return
+
+    # minutes and seconds
+    if diff < ss * 60:
+        print(f"{text} {int(diff/ss)}mins {diff%ss}secs")
+        return
+
+    # hours, minutes and seconds
+    print(f"{text} {int(diff / (ss*60))}hrs {int(diff / ss)}mins {diff%ss}secs")
+
+
 def main():
     # Number of epochs
     num_epochs = 10
@@ -366,13 +399,13 @@ def main():
 
     trainer = Trainer(dataset, num_layers)
     trainer.train_batch_size = 32
-    trainer.valid_batch_size = 32
+    #trainer.valid_batch_size = 32
     trainer.lr = 0.0001
 
-    start = time.perf_counter()
+    start = time.perf_counter_ns()
     trainer.train_model(num_epochs, adjust_lr=False)
-    end = time.perf_counter()
-    print(f"Training took {end - start}")
+    end = time.perf_counter_ns()
+    show_training_time(start, end)
 
 
 if __name__ == '__main__':
