@@ -80,27 +80,27 @@ class Trainer:
     # Name of this run
     run_name: str
     # Model
-    model: ResNet
+    model: ResNet = None
     # Number of layers in the ResNet model
     num_layers: int
     # Type of block used in the ResNet model
     block_type: Type[Union[BasicBlock, Bottleneck, None]] = None
     # Dataset to use (sets both train_data and val_data)
-    dataset: DataSet
+    dataset: DataSet = None
     # Train dataset
-    train_data: VisionDataset
+    train_dataset: VisionDataset
     # Train batch size
     train_batch_size: int = 32
     # Whether train data is reshuffled every epoch
     train_loader_shuffle = True
     # Valid dataset
-    val_data: VisionDataset
+    valid_dataset: VisionDataset
     # Valid batch size
     valid_batch_size: int = 128
     # Whether valid data is reshuffled every epoch
     valid_loader_shuffle = False
     # Loss function
-    criterion: _Loss = nn.CrossEntropyLoss()
+    loss_func: _Loss = nn.CrossEntropyLoss()
     # Optimizer
     optimizer: Optimizer
     # Optimizer Learning rate
@@ -134,8 +134,8 @@ class Trainer:
         else:
             self.run_name = run_name
         self._data_loaders, cfg = setup_dataset(self.dataset, self.train_batch_size, self.valid_batch_size)
-        self.train_data, self.val_data, self.train_loader_shuffle, self.valid_loader_shuffle = cfg
-        self.model, self.layers, self.block_type = get_model(self.num_layers, self.device, block_type=self.block_type)
+        self.train_dataset, self.valid_dataset, self.train_loader_shuffle, self.valid_loader_shuffle = cfg
+        self.model, self.layer_blocks, self.block_type = get_model(self.num_layers, self.device, block_type=self.block_type)
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
                                    weight_decay=self.weight_decay)
         tracker.set_scalar("loss.*", True)
@@ -144,14 +144,12 @@ class Trainer:
         tracker.set_scalar("train_diff", True)
         tracker.set_scalar("val_diff", True)
 
-        self.create_conf()
+        self._base_conf = self.create_conf()
+        self._conf_override = dict()
 
     def create_conf(self):
         # TODO - WIP: need to correctly implement saving config data to the run info
-        self._base_conf = {
-
-        }
-        self._conf = {
+        conf = {
             "block_type": self.block_type,
             "block_type.bottlenecks": None if self.block_type == BasicBlock else [64, 128, 256, 512],
             "dataset_name": str(self.dataset).replace("DataSet.", ""),
@@ -159,27 +157,36 @@ class Trainer:
             # "device.device_info": ,
             # "first_kernel_size": ,
             # "inner_iterations": ,
-            "loss_func": self.criterion,
+            "loss_func": self.loss_func,
             # "mode": ,
             "model": self.model,
-            "n_blocks": self.layers,
+            "layer_blocks": self.layer_blocks,
             # "n_channels": ,
             "optimizer": self.optimizer,
             "optimizer.learning_rate": self.lr,
             "optimizer.momentum": self.momentum,
             "optimizer.weight_decay": self.weight_decay,
-            "train_dataset": self.train_data,
+            "train_dataset": self.train_dataset,
             "train_batch_size": self.train_batch_size,
             "train_loader_shuffle": self.train_loader_shuffle,
-            "valid_dataset": self.val_data,
+            "valid_dataset": self.valid_dataset,
             "valid_batch_size": self.valid_batch_size,
             "valid_loader_shuffle": self.valid_loader_shuffle,
         }
 
+        return conf
+
+    def conf_overrides(self):
+        temp = self.create_conf()
+        for param in temp:
+            if self._base_conf[param] != temp[param]:
+                self._conf_override[param] = temp[param]
+
 
 
     def train_model(self, num_epochs: int = 10, adjust_lr=False):
-        self._conf["epochs"] = num_epochs
+        self._conf_override["epochs"] = num_epochs
+        self.conf_overrides()
         if num_epochs == 1:
             text = " (1 epoch)"
         else:
@@ -192,9 +199,10 @@ class Trainer:
         t_acc = [0.0, 0.0, 0.0]
         v_acc = [0.0, 0.0, 0.0]
         acc_idx = 0
-        experiment.create(name=self.run_name + text)
 
-        with experiment.record(name=self.run_name + text, token=self.token, exp_conf=self._conf):
+        experiment.create(name=self.run_name + text)
+        experiment.configs(self._base_conf, self._conf_override)
+        with experiment.start():
             for epoch in monit.loop(range(num_epochs)):
                 self._train_seen = 0
                 self._train_correct = 0
@@ -233,7 +241,7 @@ class Trainer:
         with torch.set_grad_enabled(phase == Phase.TRAIN):
             outputs = self.model(inputs)
             _, preds = torch.max(outputs, 1)
-            loss = self.criterion(outputs, labels)
+            loss = self.loss_func(outputs, labels)
 
             if phase == Phase.TRAIN:
                 loss.backward()
