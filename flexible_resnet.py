@@ -140,30 +140,35 @@ class Trainer:
 
     def create_conf(self):
         # TODO - WIP: need to correctly implement saving config data to the run info
-        self._conf = dict()
-        """self._conf = {
+        self._conf = {
             "bottlenecks": None if self.block_type == BasicBlock else [64, 128, 256, 512],
             "dataset_name": str(self.dataset).replace("DataSet.", ""),
             "device": self.device,
-            #"device.device_info": ,
-            "first_kernel_size": ,
-            "inner_iterations": ,
-            "loss_func": ,
+            # "device.device_info": ,
+            # "first_kernel_size": ,
+            # "inner_iterations": ,
+            "loss_func": self.criterion,
+            # "mode": ,
+            "model": self.model,
+            "block_type": self.block_type,
+            "n_blocks": self.layers,
+            # "n_channels": ,
+            "optimizer": self.optimizer,
+            "train_dataset": self.train_data,
+            "valid_dataset": self.val_data,
 
+            #
+            # "dataset": dataset,
+            # "num_layers": num_layers,
+            # "train_batch_size": train_batch_size,
+            # "valid_batch_size": valid_batch_size,
+            # "lr": lr,
+            # "momentum": momentum,
+            # "save_per_epoch": save_per_epoch,
+            # "step_type": step_type,
+            # "criterion": criterion,
 
-
-            "dataset": dataset,
-            "num_layers": num_layers,
-            "train_batch_size": train_batch_size,
-            "valid_batch_size": valid_batch_size,
-            "lr": lr,
-            "momentum": momentum,
-            "save_per_epoch": save_per_epoch,
-            "step_type": step_type,
-            "model": model,
-            "criterion": criterion,
-            "optimizer": optimizer
-        }"""
+        }
 
     def train_model(self, num_epochs: int = 10, adjust_lr=False):
         self._conf["epochs"] = num_epochs
@@ -335,7 +340,7 @@ def get_model(num_layers, device, block_type: Type[Union[BasicBlock, Bottleneck]
 
 def main():
     # Number of epochs
-    num_epochs = 10
+    num_epochs = 50
     # Dataset
     dataset = DataSet.STL10
     # Number of layers for the resnet model
@@ -344,7 +349,7 @@ def main():
     trainer = Trainer(dataset, num_layers)
     trainer.train_batch_size = 32
     trainer.valid_batch_size = 32
-    trainer.lr = 0.1
+    trainer.lr = 0.0001
 
     start = time.perf_counter()
     trainer.train_model(num_epochs, adjust_lr=False)
