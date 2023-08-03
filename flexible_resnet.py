@@ -16,10 +16,10 @@ from ignite.handlers.param_scheduler import PiecewiseLinear
 from labml import tracker, experiment, monit, logger
 from labml_helpers.device import DeviceInfo
 
-
 tracker.set_scalar("loss.*", True)
 tracker.set_scalar("accuracy.*", True)
 tracker.set_scalar("learning_rate", True)
+
 
 class DataSet(Enum):
     CIFAR10 = 1
@@ -142,7 +142,8 @@ class Trainer:
             self.run_name = run_name
         self._data_loaders, cfg = setup_dataset(self.dataset, self.train_batch_size, self.valid_batch_size)
         self.train_dataset, self.valid_dataset, self.train_loader_shuffle, self.valid_loader_shuffle = cfg
-        self.model, self.layer_blocks, self.block_type = get_model(self.num_layers, self.device, block_type=self.block_type)
+        self.model, self.layer_blocks, self.block_type = get_model(self.num_layers, self.device,
+                                                                   block_type=self.block_type)
 
         if lr_schedule is None:
             self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
@@ -152,8 +153,6 @@ class Trainer:
 
         self._base_conf = self.create_conf()
         self._conf_override = dict()
-
-
 
     def create_conf(self):
         # TODO - WIP: need to correctly implement saving config data to the run info
@@ -192,7 +191,6 @@ class Trainer:
 
     def set_lr_schedule(self):
         self._base_conf.pop("lr")
-
 
     def train_model(self, num_epochs: int = 10):
         self._conf_override["epochs"] = num_epochs
@@ -408,7 +406,7 @@ def main():
 
     trainer = Trainer(dataset, num_layers)
     trainer.train_batch_size = 32
-    #trainer.valid_batch_size = 32
+    # trainer.valid_batch_size = 32
 
     trainer.set_lr_schedule()
     trainer.lr = 0.0001
