@@ -7,14 +7,19 @@ from torch import optim, nn
 from torch.optim import Optimizer
 from torch.utils.data import BatchSampler
 from torch.nn.modules.loss import _Loss
-
 from torchvision import datasets, models, transforms
 from torchvision.datasets import VisionDataset
 from torchvision.models import ResNet
 from torchvision.models.resnet import BasicBlock, Bottleneck, _resnet
+from ignite.handlers.param_scheduler import PiecewiseLinear
 
 from labml import tracker, experiment, monit, logger
 from labml_helpers.device import DeviceInfo
+
+
+tracker.set_scalar("loss.*", True)
+tracker.set_scalar("accuracy.*", True)
+tracker.set_scalar("learning_rate", True)
 
 class DataSet(Enum):
     CIFAR10 = 1
@@ -103,8 +108,10 @@ class Trainer:
     loss_func: _Loss = nn.CrossEntropyLoss()
     # Optimizer
     optimizer: Optimizer
-    # Optimizer Learning rate
+    # Optimizer learning rate
     lr = 0.001
+    # Optimizer learning rate schedule
+    lr_schedule = None
     # Optimizer momentum
     momentum = 0.9
     # Optimizer weight_decay
@@ -125,7 +132,7 @@ class Trainer:
     _base_conf: dict
     _conf_override: dict
 
-    def __init__(self, dataset: DataSet, num_layers: int, run_name=None):
+    def __init__(self, dataset: DataSet, num_layers: int, run_name=None, lr_schedule=None):
         self._device_info = DeviceInfo(use_cuda=torch.cuda.is_available(), cuda_device=0)
         self.dataset = dataset
         self.num_layers = num_layers
@@ -136,16 +143,17 @@ class Trainer:
         self._data_loaders, cfg = setup_dataset(self.dataset, self.train_batch_size, self.valid_batch_size)
         self.train_dataset, self.valid_dataset, self.train_loader_shuffle, self.valid_loader_shuffle = cfg
         self.model, self.layer_blocks, self.block_type = get_model(self.num_layers, self.device, block_type=self.block_type)
-        self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
-                                   weight_decay=self.weight_decay)
-        tracker.set_scalar("loss.*", True)
-        tracker.set_scalar("accuracy.*", True)
 
-        tracker.set_scalar("train_diff", True)
-        tracker.set_scalar("val_diff", True)
+        if lr_schedule is None:
+            self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
+                                       weight_decay=self.weight_decay)
+        else:
+            lr = lambda step: lr_schedule(step / len(train_batches)) / batch_size
 
         self._base_conf = self.create_conf()
         self._conf_override = dict()
+
+
 
     def create_conf(self):
         # TODO - WIP: need to correctly implement saving config data to the run info
@@ -182,9 +190,11 @@ class Trainer:
             if self._base_conf[param] != temp[param]:
                 self._conf_override[param] = temp[param]
 
+    def set_lr_schedule(self):
+        self._base_conf.pop("lr")
 
 
-    def train_model(self, num_epochs: int = 10, adjust_lr=False):
+    def train_model(self, num_epochs: int = 10):
         self._conf_override["epochs"] = num_epochs
         self.conf_overrides()
         if num_epochs == 1:
@@ -394,15 +404,20 @@ def main():
     # Dataset
     dataset = DataSet.STL10
     # Number of layers for the resnet model
-    num_layers = 101
+    num_layers = 18
 
     trainer = Trainer(dataset, num_layers)
     trainer.train_batch_size = 32
     #trainer.valid_batch_size = 32
+
+    trainer.set_lr_schedule()
     trainer.lr = 0.0001
+    lr = lambda step: lr_schedule(step / len(train_batches)) / batch_size
+
+    trainer.lr_schedule = PiecewiseLinear([0, 5, 24], [0, 0.4, 0])
 
     start = time.perf_counter()
-    trainer.train_model(num_epochs, adjust_lr=False)
+    trainer.train_model(num_epochs)
     end = time.perf_counter()
     show_training_time(start, end)
 
