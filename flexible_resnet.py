@@ -360,33 +360,26 @@ def show_training_time(start, end):
     text = "Training took"
     diff = end - start
 
-    ns = 1000000
-    # nanoseconds
-    if diff < ns:
-        print(f"{text} {diff}ns")
-        return
-    diff = diff / ns
-
-    ms = 1000
     # milliseconds
-    if diff < ms:
+    if diff < 1:
+        diff *= 1000
         print(f"{text} {diff}ms")
         return
-    diff = diff / ms
 
-    ss = 60
+    mn = 60
     # seconds
-    if diff < ss:
+    if diff < mn:
         print(f"{text} {diff}secs")
         return
 
+    hr = 60
     # minutes and seconds
-    if diff < ss * 60:
-        print(f"{text} {int(diff/ss)}mins {diff%ss}secs")
+    if diff < hr * mn:
+        print(f"{text} {int(diff / hr)}mins {diff % mn}secs")
         return
 
     # hours, minutes and seconds
-    print(f"{text} {int(diff / (ss*60))}hrs {int(diff / ss)}mins {diff%ss}secs")
+    print(f"{text} {int(diff / (hr * mn))}hrs {int((diff % hr) / mn)}mins {diff % mn}secs")
 
 
 def main():
@@ -402,9 +395,9 @@ def main():
     #trainer.valid_batch_size = 32
     trainer.lr = 0.0001
 
-    start = time.perf_counter_ns()
+    start = time.perf_counter()
     trainer.train_model(num_epochs, adjust_lr=False)
-    end = time.perf_counter_ns()
+    end = time.perf_counter()
     show_training_time(start, end)
 
 
