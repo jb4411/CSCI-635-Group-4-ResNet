@@ -110,6 +110,8 @@ class Trainer:
     optimizer: Optimizer
     # Optimizer learning rate
     lr = 0.001
+    # Milestones for optimizer learning rate schedule
+    lr_milestones = None
     # Optimizer learning rate schedule
     lr_schedule = None
     # Optimizer momentum
@@ -132,7 +134,7 @@ class Trainer:
     _base_conf: dict
     _conf_override: dict
 
-    def __init__(self, dataset: DataSet, num_layers: int, run_name=None, lr_schedule=None):
+    def __init__(self, dataset: DataSet, num_layers: int, run_name=None, lr_milestones=None):
         self._device_info = DeviceInfo(use_cuda=torch.cuda.is_available(), cuda_device=0)
         self.dataset = dataset
         self.num_layers = num_layers
@@ -145,11 +147,11 @@ class Trainer:
         self.model, self.layer_blocks, self.block_type = get_model(self.num_layers, self.device,
                                                                    block_type=self.block_type)
 
-        if lr_schedule is None:
-            self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
-                                       weight_decay=self.weight_decay)
-        else:
-            lr = lambda step: lr_schedule(step / len(train_batches)) / batch_size
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
+                                   weight_decay=self.weight_decay)
+        if lr_milestones is not None:
+            self.lr_milestones = lr_milestones
+            self.lr_schedule = PiecewiseLinear(self.optimizer, "lr", milestones_values=lr_milestones)
 
         self._base_conf = self.create_conf()
         self._conf_override = dict()
@@ -171,6 +173,9 @@ class Trainer:
             # "n_channels": ,
             "optimizer": self.optimizer,
             "optimizer.learning_rate": self.lr,
+            "optimizer.adjust_lr": False,
+            "optimizer.lr_milestones": self.lr_milestones,
+            "optimizer.lr_schedule": self.lr_schedule,
             "optimizer.momentum": self.momentum,
             "optimizer.weight_decay": self.weight_decay,
             "train_dataset": self.train_dataset,
@@ -189,10 +194,16 @@ class Trainer:
             if self._base_conf[param] != temp[param]:
                 self._conf_override[param] = temp[param]
 
-    def set_lr_schedule(self):
-        self._base_conf.pop("lr")
+    def train_model(self, num_epochs: int = 10, adjust_lr=False):
+        if adjust_lr:
+            self._base_conf["lr"] = None
+            self._conf_override["optimizer.adjust_lr"] = True
+            self._conf_override["optimizer.lr_milestones"] = self.lr_milestones
+            self._conf_override["optimizer.lr_schedule"] = self.lr_schedule
+        else:
+            self._base_conf["optimizer.lr_milestones"] = None
+            self._base_conf["optimizer.lr_schedule"] = None
 
-    def train_model(self, num_epochs: int = 10):
         self._conf_override["epochs"] = num_epochs
         self.conf_overrides()
         if num_epochs == 1:
@@ -225,20 +236,13 @@ class Trainer:
                         (inputs, labels) = v_data[idx]
                     self.step(inputs, labels, phase, idx)
 
+                if adjust_lr:
+                    tracker.add({"learning_rate": self.lr_schedule(epoch)})
+                    for param_group in self.optimizer.param_groups:
+                        tracker.add({"lr": param_group['lr']})
+
                 tracker.save()
                 tracker.new_line()
-
-                if adjust_lr:
-                    t_acc[acc_idx] = self._train_correct / self._train_seen
-                    v_acc[acc_idx] = self._valid_correct / self._valid_seen
-                    acc_idx = (acc_idx + 1) % 3
-                    tracker.add({"train_diff": abs(min(t_acc) - max(t_acc)), "val_diff": abs(min(v_acc) - max(v_acc))})
-                    if (abs(min(t_acc) - max(t_acc)) <= 0.005) and (abs(min(t_acc) - max(t_acc)) <= 0.005):
-                        adjust_lr = False
-                        new_lr = self.lr / 10
-                        for param_group in self.optimizer.param_groups:
-                            param_group['lr'] = new_lr
-                        logger.log(f"Learning rate adjusted from {self.lr} to {new_lr}.")
 
     def step(self, inputs, labels, phase: Phase, batch_idx: int):
         inputs = inputs.to(self.device)
@@ -398,21 +402,20 @@ def show_training_time(start, end):
 
 def main():
     # Number of epochs
-    num_epochs = 10
+    num_epochs = 24
     # Dataset
-    dataset = DataSet.STL10
+    dataset = DataSet.CIFAR10
     # Number of layers for the resnet model
     num_layers = 18
 
-    trainer = Trainer(dataset, num_layers)
-    trainer.train_batch_size = 32
-    # trainer.valid_batch_size = 32
+    lr_milestones = ([0, 5, 24], [0, 0.4, 0])
 
-    trainer.set_lr_schedule()
-    trainer.lr = 0.0001
-    lr = lambda step: lr_schedule(step / len(train_batches)) / batch_size
+    lr_milestones = ([5, 0.4], [24, 0])
 
-    trainer.lr_schedule = PiecewiseLinear([0, 5, 24], [0, 0.4, 0])
+    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones)
+    trainer.train_batch_size = 512
+    trainer.valid_batch_size = 512
+    # trainer.lr = 0.0001
 
     start = time.perf_counter()
     trainer.train_model(num_epochs)
