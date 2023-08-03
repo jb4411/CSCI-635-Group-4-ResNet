@@ -122,7 +122,8 @@ class Trainer:
     _train_correct: int = 0
     _valid_seen: int = 0
     _valid_correct: int = 0
-    _conf: dict
+    _base_conf: dict
+    _conf_override: dict
 
     def __init__(self, dataset: DataSet, num_layers: int, run_name=None):
         self._device_info = DeviceInfo(use_cuda=torch.cuda.is_available(), cuda_device=0)
@@ -147,8 +148,12 @@ class Trainer:
 
     def create_conf(self):
         # TODO - WIP: need to correctly implement saving config data to the run info
+        self._base_conf = {
+
+        }
         self._conf = {
-            "bottlenecks": None if self.block_type == BasicBlock else [64, 128, 256, 512],
+            "block_type": self.block_type,
+            "block_type.bottlenecks": None if self.block_type == BasicBlock else [64, 128, 256, 512],
             "dataset_name": str(self.dataset).replace("DataSet.", ""),
             "device": self._device_info,
             # "device.device_info": ,
@@ -157,35 +162,21 @@ class Trainer:
             "loss_func": self.criterion,
             # "mode": ,
             "model": self.model,
-            "block_type": self.block_type,
             "n_blocks": self.layers,
             # "n_channels": ,
             "optimizer": self.optimizer,
             "optimizer.learning_rate": self.lr,
             "optimizer.momentum": self.momentum,
             "optimizer.weight_decay": self.weight_decay,
-
-
-
             "train_dataset": self.train_data,
             "train_batch_size": self.train_batch_size,
             "train_loader_shuffle": self.train_loader_shuffle,
-
             "valid_dataset": self.val_data,
             "valid_batch_size": self.valid_batch_size,
             "valid_loader_shuffle": self.valid_loader_shuffle,
-            #
-            # "dataset": dataset,
-            # "num_layers": num_layers,
-            # "train_batch_size": train_batch_size,
-            # "valid_batch_size": valid_batch_size,
-            # "lr": lr,
-            # "momentum": momentum,
-            # "save_per_epoch": save_per_epoch,
-            # "step_type": step_type,
-            # "criterion": criterion,
-
         }
+
+
 
     def train_model(self, num_epochs: int = 10, adjust_lr=False):
         self._conf["epochs"] = num_epochs
@@ -201,6 +192,8 @@ class Trainer:
         t_acc = [0.0, 0.0, 0.0]
         v_acc = [0.0, 0.0, 0.0]
         acc_idx = 0
+        experiment.create(name=self.run_name + text)
+
         with experiment.record(name=self.run_name + text, token=self.token, exp_conf=self._conf):
             for epoch in monit.loop(range(num_epochs)):
                 self._train_seen = 0
