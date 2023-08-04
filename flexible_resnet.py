@@ -16,7 +16,7 @@ from ignite.handlers.param_scheduler import PiecewiseLinear
 from labml import tracker, experiment, monit, logger
 from labml_helpers.device import DeviceInfo
 
-from custom_resnet_models import ResNet56
+from custom_resnet_models import ResNet20, ResNet32, ResNet44, ResNet56, ResNet110, ResNet1202, N_ResNet
 
 tracker.set_scalar("loss.*", True)
 tracker.set_scalar("accuracy.*", True)
@@ -432,7 +432,7 @@ def main():
     # Number of layers for the resnet model
     num_layers = 20
     # Custom ResNet model
-    custom_model = ResNet56
+    custom_model = None
 
     lr_milestones = [(0, 0), (5, 0.4), (24, 0)]
     lr_milestones = [(0, 0), (15, 0.1), (16, 0.105), (30, 0.005), (35, 0)]

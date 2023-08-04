@@ -74,37 +74,43 @@ class ResNet(nn.Module):
         return self._forward_impl(x)
 
 
-def n_resnet(n: int, block_type: Type[Union[BasicBlock, Bottleneck]], device):
+def _resnet(n: int, block_type: Type[Union[BasicBlock, Bottleneck]], device):
     layer_blocks = [n, n, n]
     model = ResNet(block_type, layer_blocks)
     return model.to(device), layer_blocks, block_type
 
 
+def N_ResNet(n, block_type: Type[Union[BasicBlock, Bottleneck]]):
+    def res(device):
+        return _resnet(n, block_type, device)
+    return res
+
+
 def ResNet20(device):
     n = 3
-    return n_resnet(n, BasicBlock, device)
+    return _resnet(n, BasicBlock, device)
 
 
 def ResNet32(device):
     n = 5
-    return n_resnet(n, BasicBlock, device)
+    return _resnet(n, BasicBlock, device)
 
 
 def ResNet44(device):
     n = 7
-    return n_resnet(n, BasicBlock, device)
+    return _resnet(n, BasicBlock, device)
 
 
 def ResNet56(device):
     n = 9
-    return n_resnet(n, BasicBlock, device)
+    return _resnet(n, BasicBlock, device)
 
 
 def ResNet110(device):
     n = 18
-    return n_resnet(n, BasicBlock, device)
+    return _resnet(n, BasicBlock, device)
 
 
 def ResNet1202(device):
     n = 200
-    return n_resnet(n, BasicBlock, device)
+    return _resnet(n, BasicBlock, device)
