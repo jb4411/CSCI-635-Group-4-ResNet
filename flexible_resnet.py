@@ -426,11 +426,11 @@ def show_training_time(start, end):
 
 def main():
     # Number of epochs
-    num_epochs = 50
+    num_epochs = 45
     # Dataset
-    dataset = DataSet.CIFAR10
+    dataset = DataSet.STL10
     # Number of layers for the resnet model
-    num_layers = 20
+    num_layers = 18
     # Custom ResNet model
     custom_model = None
 
@@ -441,10 +441,22 @@ def main():
     lr_milestones = [(0, 0), (10, 0.1), (20, 0.05), (25, 0.01), (30, 0)]
     lr_milestones = [(0, 0), (15, 0.1), (25, 0.01), (30, 0)]
     lr_milestones = [(0, 0.1), (10, 0.12), (20, 0.1), (30, 0.01), (50, 0)]
+
+    # used for 4 runs
     lr_milestones = [(0, 0.1), (10, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
+
+    # almost 60% acc on stl10
+    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.2), (30, 0.1), (40, 0.01), (50, 0)]
+
+    # 60% acc on stl10
+    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
+
+    lr_milestones = [(0, 0.01), (10, 0.11), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
+
+    #lr_milestones = [(0, 0.1), (num_layers/2, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
     adjust_lr = True
 
-    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, num_workers=6, custom_model=custom_model)
+    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, custom_model=custom_model)
     #trainer.weight_decay = 0.001
     trainer.train_batch_size = 500
     trainer.valid_batch_size = 500
