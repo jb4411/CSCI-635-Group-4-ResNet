@@ -16,6 +16,8 @@ from ignite.handlers.param_scheduler import PiecewiseLinear
 from labml import tracker, experiment, monit, logger
 from labml_helpers.device import DeviceInfo
 
+from custom_resnet_models import ResNet56
+
 tracker.set_scalar("loss.*", True)
 tracker.set_scalar("accuracy.*", True)
 tracker.set_scalar("learning_rate", True)
@@ -160,7 +162,7 @@ class Trainer:
             self.model, self.layer_blocks, self.block_type = get_model(self.num_layers, self.device,
                                                                        block_type=self.block_type)
         else:
-            self.model, self.layer_blocks, self.block_type = custom_model()
+            self.model, self.layer_blocks, self.block_type = custom_model(self.device)
 
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
                                    weight_decay=self.weight_decay)
@@ -428,7 +430,9 @@ def main():
     # Dataset
     dataset = DataSet.CIFAR10
     # Number of layers for the resnet model
-    num_layers = 18
+    num_layers = 20
+    # Custom ResNet model
+    custom_model = ResNet56
 
     lr_milestones = [(0, 0), (5, 0.4), (24, 0)]
     lr_milestones = [(0, 0), (15, 0.1), (16, 0.105), (30, 0.005), (35, 0)]
@@ -440,7 +444,7 @@ def main():
     lr_milestones = [(0, 0.1), (10, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
     adjust_lr = True
 
-    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, num_workers=6)
+    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, num_workers=6, custom_model=custom_model)
     #trainer.weight_decay = 0.001
     trainer.train_batch_size = 500
     trainer.valid_batch_size = 500
