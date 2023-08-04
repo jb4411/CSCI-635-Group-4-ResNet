@@ -7,14 +7,21 @@ from torch import optim, nn
 from torch.optim import Optimizer
 from torch.utils.data import BatchSampler
 from torch.nn.modules.loss import _Loss
-
 from torchvision import datasets, models, transforms
 from torchvision.datasets import VisionDataset
 from torchvision.models import ResNet
 from torchvision.models.resnet import BasicBlock, Bottleneck, _resnet
+from ignite.handlers.param_scheduler import PiecewiseLinear
 
 from labml import tracker, experiment, monit, logger
 from labml_helpers.device import DeviceInfo
+
+from custom_resnet_models import ResNet20, ResNet32, ResNet44, ResNet56, ResNet110, ResNet1202, N_ResNet
+
+tracker.set_scalar("loss.*", True)
+tracker.set_scalar("accuracy.*", True)
+tracker.set_scalar("learning_rate", True)
+
 
 class DataSet(Enum):
     CIFAR10 = 1
@@ -34,43 +41,51 @@ class Phase(Enum):
 
 
 def setup_dataset(dataset: DataSet, train_batch_size, valid_batch_size,
-                  train_loader_shuffle=True, valid_loader_shuffle=False):
+                  train_loader_shuffle=True, valid_loader_shuffle=False, num_workers=0):
+    mean = (0.5, 0.5, 0.5)
+    std = (0.5, 0.5, 0.5)
     if dataset == DataSet.CIFAR10:
+        mean = (0.4914, 0.4822, 0.4465)
+        std = (0.2023, 0.1994, 0.2010)
+
         train_data = datasets.CIFAR10('./data', train=True, download=True,
                                       transform=transforms.Compose([
                                           # Pad and crop
-                                          transforms.RandomCrop(32, padding=4),
+                                          #transforms.RandomCrop(32, padding=4),
                                           # Random horizontal flip
                                           transforms.RandomHorizontalFlip(),
-                                          #
                                           transforms.ToTensor(),
-                                          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                          transforms.Normalize(mean, std)
                                       ]))
         val_data = datasets.CIFAR10('./data', train=False, download=True,
                                     transform=transforms.Compose([
                                         transforms.ToTensor(),
-                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                        transforms.Normalize(mean, std)
                                     ]))
     elif dataset == DataSet.STL10:
+        mean = (0.4467, 0.4398, 0.4066)
+        std = (0.2603, 0.2566, 0.2713)
         train_data = datasets.STL10('./data', split="train", download=True,
                                     transform=transforms.Compose([
                                         # Pad and crop
-                                        transforms.RandomCrop(96, padding=4),
+                                        #transforms.RandomCrop(96, padding=4),
                                         # Random horizontal flip
                                         transforms.RandomHorizontalFlip(),
                                         transforms.ToTensor(),
-                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                        transforms.Normalize(mean, std)
                                     ]))
         val_data = datasets.STL10('./data', split="test", download=True,
                                   transform=transforms.Compose([
                                       transforms.ToTensor(),
-                                      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                      transforms.Normalize(mean, std)
                                   ]))
 
     # Training and validation data loaders
     data_loaders = {
-        Phase.TRAIN: torch.utils.data.DataLoader(train_data, batch_size=train_batch_size, shuffle=train_loader_shuffle),
-        Phase.VALID: torch.utils.data.DataLoader(val_data, batch_size=valid_batch_size, shuffle=valid_loader_shuffle)
+        Phase.TRAIN: torch.utils.data.DataLoader(train_data, batch_size=train_batch_size, shuffle=train_loader_shuffle,
+                                                 num_workers=num_workers),
+        Phase.VALID: torch.utils.data.DataLoader(val_data, batch_size=valid_batch_size, shuffle=valid_loader_shuffle,
+                                                 num_workers=num_workers)
     }
 
     return data_loaders, (train_data, val_data, train_loader_shuffle, valid_loader_shuffle)
@@ -103,8 +118,12 @@ class Trainer:
     loss_func: _Loss = nn.CrossEntropyLoss()
     # Optimizer
     optimizer: Optimizer
-    # Optimizer Learning rate
+    # Optimizer learning rate
     lr = 0.001
+    # Milestones for optimizer learning rate schedule
+    lr_milestones = None
+    # Optimizer learning rate schedule
+    lr_schedule = None
     # Optimizer momentum
     momentum = 0.9
     # Optimizer weight_decay
@@ -125,24 +144,31 @@ class Trainer:
     _base_conf: dict
     _conf_override: dict
 
-    def __init__(self, dataset: DataSet, num_layers: int, run_name=None):
+    def __init__(self, dataset: DataSet, num_layers: int, run_name=None, lr_milestones=None, num_workers=0,
+                 custom_model=None):
         self._device_info = DeviceInfo(use_cuda=torch.cuda.is_available(), cuda_device=0)
         self.dataset = dataset
+        self._data_loaders, cfg = setup_dataset(self.dataset, self.train_batch_size, self.valid_batch_size,
+                                                num_workers=num_workers)
+        self.train_dataset, self.valid_dataset, self.train_loader_shuffle, self.valid_loader_shuffle = cfg
+
         self.num_layers = num_layers
         if run_name is None:
             self.run_name = f"ResNet{num_layers} - {str(self.dataset).replace('DataSet.', '')}"
         else:
             self.run_name = run_name
-        self._data_loaders, cfg = setup_dataset(self.dataset, self.train_batch_size, self.valid_batch_size)
-        self.train_dataset, self.valid_dataset, self.train_loader_shuffle, self.valid_loader_shuffle = cfg
-        self.model, self.layer_blocks, self.block_type = get_model(self.num_layers, self.device, block_type=self.block_type)
+
+        if custom_model is None:
+            self.model, self.layer_blocks, self.block_type = get_model(self.num_layers, self.device,
+                                                                       block_type=self.block_type)
+        else:
+            self.model, self.layer_blocks, self.block_type = custom_model(self.device)
+
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
                                    weight_decay=self.weight_decay)
-        tracker.set_scalar("loss.*", True)
-        tracker.set_scalar("accuracy.*", True)
-
-        tracker.set_scalar("train_diff", True)
-        tracker.set_scalar("val_diff", True)
+        if lr_milestones is not None:
+            self.lr_milestones = lr_milestones
+            self.lr_schedule = PiecewiseLinear(self.optimizer, "lr", milestones_values=lr_milestones)
 
         self._base_conf = self.create_conf()
         self._conf_override = dict()
@@ -164,6 +190,9 @@ class Trainer:
             # "n_channels": ,
             "optimizer": self.optimizer,
             "optimizer.learning_rate": self.lr,
+            "optimizer.adjust_lr": False,
+            "optimizer.lr_milestones": self.lr_milestones,
+            "optimizer.lr_schedule": self.lr_schedule,
             "optimizer.momentum": self.momentum,
             "optimizer.weight_decay": self.weight_decay,
             "train_dataset": self.train_dataset,
@@ -182,9 +211,17 @@ class Trainer:
             if self._base_conf[param] != temp[param]:
                 self._conf_override[param] = temp[param]
 
-
-
     def train_model(self, num_epochs: int = 10, adjust_lr=False):
+        if adjust_lr:
+            self._base_conf["lr"] = None
+            self._conf_override["optimizer.adjust_lr"] = True
+            self._conf_override["optimizer.lr_milestones"] = self.lr_milestones
+            self._conf_override["optimizer.lr_schedule"] = self.lr_schedule
+            self.lr_schedule(0)
+        else:
+            self._base_conf["optimizer.lr_milestones"] = None
+            self._base_conf["optimizer.lr_schedule"] = None
+
         self._conf_override["epochs"] = num_epochs
         self.conf_overrides()
         if num_epochs == 1:
@@ -196,14 +233,17 @@ class Trainer:
         v_range = range(len(self._data_loaders[Phase.VALID]))
         t_data = list(self._data_loaders[Phase.TRAIN])
         v_data = list(self._data_loaders[Phase.VALID])
-        t_acc = [0.0, 0.0, 0.0]
-        v_acc = [0.0, 0.0, 0.0]
-        acc_idx = 0
-
+        tracker.add({'loss.train': 0, 'accuracy.train': 0})
+        tracker.add({'loss.valid': 0, 'accuracy.valid': 0})
         experiment.create(name=self.run_name + text)
         experiment.configs(self._base_conf, self._conf_override)
         with experiment.start():
             for epoch in monit.loop(range(num_epochs)):
+                if adjust_lr:
+                    self.lr_schedule(epoch+1)
+                    for param_group in self.optimizer.param_groups:
+                        tracker.add({"lr": param_group['lr']})
+
                 self._train_seen = 0
                 self._train_correct = 0
                 self._valid_seen = 0
@@ -217,26 +257,21 @@ class Trainer:
                         (inputs, labels) = v_data[idx]
                     self.step(inputs, labels, phase, idx)
 
+                """if adjust_lr:
+                    for param_group in self.optimizer.param_groups:
+                        tracker.add({"lr": param_group['lr']})"""
+
                 tracker.save()
                 tracker.new_line()
 
-                if adjust_lr:
-                    t_acc[acc_idx] = self._train_correct / self._train_seen
-                    v_acc[acc_idx] = self._valid_correct / self._valid_seen
-                    acc_idx = (acc_idx + 1) % 3
-                    tracker.add({"train_diff": abs(min(t_acc) - max(t_acc)), "val_diff": abs(min(v_acc) - max(v_acc))})
-                    if (abs(min(t_acc) - max(t_acc)) <= 0.005) and (abs(min(t_acc) - max(t_acc)) <= 0.005):
-                        adjust_lr = False
-                        new_lr = self.lr / 10
-                        for param_group in self.optimizer.param_groups:
-                            param_group['lr'] = new_lr
-                        logger.log(f"Learning rate adjusted from {self.lr} to {new_lr}.")
+            if adjust_lr:
+                for param_group in self.optimizer.param_groups:
+                    tracker.add({"lr": param_group['lr']})
+                tracker.save()
 
     def step(self, inputs, labels, phase: Phase, batch_idx: int):
         inputs = inputs.to(self.device)
         labels = labels.to(self.device)
-
-        self.optimizer.zero_grad()
 
         with torch.set_grad_enabled(phase == Phase.TRAIN):
             outputs = self.model(inputs)
@@ -246,6 +281,7 @@ class Trainer:
             if phase == Phase.TRAIN:
                 loss.backward()
                 self.optimizer.step()
+                self.optimizer.zero_grad()
 
         if phase == Phase.TRAIN:
             self._train_correct += torch.sum(preds == labels.data)
@@ -281,7 +317,7 @@ def generate_resnet(layers: List[int], num_classes: int = 10, block_type: Type[U
         block = block_type
 
     # Create the ResNet model
-    model = _resnet(block, layers, weights=None, num_classes=num_classes, **kwargs)
+    model = _resnet(block, layers, weights=None, num_classes=num_classes, progress=True, **kwargs)
 
     return model
 
@@ -390,19 +426,44 @@ def show_training_time(start, end):
 
 def main():
     # Number of epochs
-    num_epochs = 10
+    num_epochs = 50
     # Dataset
-    dataset = DataSet.STL10
+    dataset = DataSet.CIFAR10
     # Number of layers for the resnet model
-    num_layers = 101
+    num_layers = 18
+    # Custom ResNet model
+    custom_model = None
 
-    trainer = Trainer(dataset, num_layers)
-    trainer.train_batch_size = 32
-    #trainer.valid_batch_size = 32
-    trainer.lr = 0.0001
+    lr_milestones = [(0, 0), (5, 0.4), (24, 0)]
+    lr_milestones = [(0, 0), (15, 0.1), (16, 0.105), (30, 0.005), (35, 0)]
+    lr_milestones = [(0, 0), (10, 0.01), (30, 0)]
+    lr_milestones = [(0, 0), (15, 0.1), (20, 0.05), (25, 0.01), (30, 0)]
+    lr_milestones = [(0, 0), (10, 0.1), (20, 0.05), (25, 0.01), (30, 0)]
+    lr_milestones = [(0, 0), (15, 0.1), (25, 0.01), (30, 0)]
+    lr_milestones = [(0, 0.1), (10, 0.12), (20, 0.1), (30, 0.01), (50, 0)]
+
+    # used for 4 runs
+    lr_milestones = [(0, 0.1), (10, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
+
+    # almost 60% acc on stl10
+    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.2), (30, 0.1), (40, 0.01), (50, 0)]
+
+    # 60% acc on stl10
+    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
+
+    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.11), (40, 0.01), (50, 0)]
+
+    #lr_milestones = [(0, 0.1), (num_layers/2, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
+    adjust_lr = True
+
+    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, custom_model=custom_model)
+    #trainer.weight_decay = 0.001
+    trainer.train_batch_size = 500
+    trainer.valid_batch_size = 500
+    # trainer.lr = 0.0001
 
     start = time.perf_counter()
-    trainer.train_model(num_epochs, adjust_lr=False)
+    trainer.train_model(num_epochs, adjust_lr=adjust_lr)
     end = time.perf_counter()
     show_training_time(start, end)
 
