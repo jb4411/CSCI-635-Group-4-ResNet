@@ -421,14 +421,19 @@ def main():
     # Dataset
     dataset = DataSet.STL10
     # Number of layers for the resnet model
-    num_layers = 152
+    num_layers = 18
 
     lr_milestones = [(0, 0), (5, 0.4), (24, 0)]
     lr_milestones = [(0, 0), (15, 0.1), (16, 0.105), (30, 0.005), (35, 0)]
     lr_milestones = [(0, 0), (10, 0.01), (30, 0)]
+    lr_milestones = [(0, 0), (15, 0.1), (20, 0.05), (25, 0.01), (30, 0)]
+    lr_milestones = [(0, 0), (10, 0.1), (20, 0.05), (25, 0.01), (30, 0)]
+    lr_milestones = [(0, 0), (15, 0.1), (25, 0.01), (30, 0)]
+    lr_milestones = [(0, 0.1), (10, 0.12), (20, 0.1), (30, 0)]
     adjust_lr = True
 
-    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones)
+    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, num_workers=6)
+    #trainer.weight_decay = 0.001
     trainer.train_batch_size = 500
     trainer.valid_batch_size = 500
     # trainer.lr = 0.0001
