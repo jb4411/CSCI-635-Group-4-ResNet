@@ -142,18 +142,25 @@ class Trainer:
     _base_conf: dict
     _conf_override: dict
 
-    def __init__(self, dataset: DataSet, num_layers: int, run_name=None, lr_milestones=None, num_workers=0):
+    def __init__(self, dataset: DataSet, num_layers: int, run_name=None, lr_milestones=None, num_workers=0,
+                 custom_model=None):
         self._device_info = DeviceInfo(use_cuda=torch.cuda.is_available(), cuda_device=0)
         self.dataset = dataset
+        self._data_loaders, cfg = setup_dataset(self.dataset, self.train_batch_size, self.valid_batch_size,
+                                                num_workers=num_workers)
+        self.train_dataset, self.valid_dataset, self.train_loader_shuffle, self.valid_loader_shuffle = cfg
+
         self.num_layers = num_layers
         if run_name is None:
             self.run_name = f"ResNet{num_layers} - {str(self.dataset).replace('DataSet.', '')}"
         else:
             self.run_name = run_name
-        self._data_loaders, cfg = setup_dataset(self.dataset, self.train_batch_size, self.valid_batch_size)
-        self.train_dataset, self.valid_dataset, self.train_loader_shuffle, self.valid_loader_shuffle = cfg
-        self.model, self.layer_blocks, self.block_type = get_model(self.num_layers, self.device,
-                                                                   block_type=self.block_type)
+
+        if custom_model is None:
+            self.model, self.layer_blocks, self.block_type = get_model(self.num_layers, self.device,
+                                                                       block_type=self.block_type)
+        else:
+            self.model, self.layer_blocks, self.block_type = custom_model()
 
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
                                    weight_decay=self.weight_decay)
@@ -417,9 +424,9 @@ def show_training_time(start, end):
 
 def main():
     # Number of epochs
-    num_epochs = 30
+    num_epochs = 50
     # Dataset
-    dataset = DataSet.STL10
+    dataset = DataSet.CIFAR10
     # Number of layers for the resnet model
     num_layers = 18
 
@@ -429,7 +436,8 @@ def main():
     lr_milestones = [(0, 0), (15, 0.1), (20, 0.05), (25, 0.01), (30, 0)]
     lr_milestones = [(0, 0), (10, 0.1), (20, 0.05), (25, 0.01), (30, 0)]
     lr_milestones = [(0, 0), (15, 0.1), (25, 0.01), (30, 0)]
-    lr_milestones = [(0, 0.1), (10, 0.12), (20, 0.1), (30, 0)]
+    lr_milestones = [(0, 0.1), (10, 0.12), (20, 0.1), (30, 0.01), (50, 0)]
+    lr_milestones = [(0, 0.1), (10, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
     adjust_lr = True
 
     trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, num_workers=6)
