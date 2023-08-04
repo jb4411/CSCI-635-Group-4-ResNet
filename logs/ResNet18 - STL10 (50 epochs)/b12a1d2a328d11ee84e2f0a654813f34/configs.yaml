@@ -1,0 +1,384 @@
+block_type:
+  computed: <class 'torchvision.models.resnet.BasicBlock'>
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: block_type
+  options: []
+  order: 0
+  type: <class 'type'>
+  value: <class 'torchvision.models.resnet.BasicBlock'>
+block_type.bottlenecks:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: block_type.bottlenecks
+  options: []
+  order: 1
+  type: <class 'NoneType'>
+  value: null
+dataset_name:
+  computed: STL10
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: dataset_name
+  options: []
+  order: 2
+  type: <class 'str'>
+  value: STL10
+device:
+  computed: GPU:0 - NVIDIA GeForce RTX 4090
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: device
+  options: []
+  order: 3
+  type: <class 'labml_helpers.device.DeviceInfo'>
+  value: GPU:0 - NVIDIA GeForce RTX 4090
+epochs:
+  computed: 50
+  is_explicitly_specified: true
+  is_hyperparam: false
+  is_meta: false
+  name: epochs
+  options: []
+  order: 21
+  type: <class 'int'>
+  value: 50
+layer_blocks:
+  computed:
+  - 2
+  - 2
+  - 2
+  - 2
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: layer_blocks
+  options: []
+  order: 6
+  type: <class 'list'>
+  value:
+  - 2
+  - 2
+  - 2
+  - 2
+loss_func:
+  computed: CrossEntropyLoss()
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: loss_func
+  options: []
+  order: 4
+  type: <class 'torch.nn.modules.loss.CrossEntropyLoss'>
+  value: CrossEntropyLoss()
+lr:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: lr
+  options: []
+  order: 20
+  type: <class 'NoneType'>
+  value: null
+model:
+  computed: "ResNet(\n  (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2),\
+    \ padding=(3, 3), bias=False)\n  (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n  (relu): ReLU(inplace=True)\n  (maxpool):\
+    \ MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)\n\
+    \  (layer1): Sequential(\n    (0): BasicBlock(\n      (conv1): Conv2d(64, 64,\
+    \ kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn1):\
+    \ BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(64, 64, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(64,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n    )\n   \
+    \ (1): BasicBlock(\n      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1,\
+    \ 1), padding=(1, 1), bias=False)\n      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n      (relu): ReLU(inplace=True)\n \
+    \     (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1),\
+    \ bias=False)\n      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n    )\n  )\n  (layer2): Sequential(\n    (0): BasicBlock(\n\
+    \      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1,\
+    \ 1), bias=False)\n      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n      (relu): ReLU(inplace=True)\n      (conv2):\
+    \ Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)\n\
+    \      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (downsample): Sequential(\n        (0): Conv2d(64, 128, kernel_size=(1,\
+    \ 1), stride=(2, 2), bias=False)\n        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n      )\n    )\n    (1): BasicBlock(\n\
+    \      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1,\
+    \ 1), bias=False)\n      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n      (relu): ReLU(inplace=True)\n      (conv2):\
+    \ Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)\n\
+    \      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \    )\n  )\n  (layer3): Sequential(\n    (0): BasicBlock(\n      (conv1): Conv2d(128,\
+    \ 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)\n      (bn1):\
+    \ BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(256, 256, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(256,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n      (downsample):\
+    \ Sequential(\n        (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(2, 2),\
+    \ bias=False)\n        (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n      )\n    )\n    (1): BasicBlock(\n      (conv1):\
+    \ Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)\n\
+    \      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(256, 256, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(256,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n    )\n  )\n\
+    \  (layer4): Sequential(\n    (0): BasicBlock(\n      (conv1): Conv2d(256, 512,\
+    \ kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)\n      (bn1):\
+    \ BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(512, 512, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(512,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n      (downsample):\
+    \ Sequential(\n        (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(2, 2),\
+    \ bias=False)\n        (1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n      )\n    )\n    (1): BasicBlock(\n      (conv1):\
+    \ Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)\n\
+    \      (bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(512, 512, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(512,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n    )\n  )\n\
+    \  (avgpool): AdaptiveAvgPool2d(output_size=(1, 1))\n  (fc): Linear(in_features=512,\
+    \ out_features=1000, bias=True)\n)"
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: model
+  options: []
+  order: 5
+  type: <class 'torchvision.models.resnet.ResNet'>
+  value: "ResNet(\n  (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3,\
+    \ 3), bias=False)\n  (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n  (relu): ReLU(inplace=True)\n  (maxpool): MaxPool2d(kernel_size=3,\
+    \ stride=2, padding=1, dilation=1, ceil_mode=False)\n  (layer1): Sequential(\n\
+    \    (0): BasicBlock(\n      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1,\
+    \ 1), padding=(1, 1), bias=False)\n      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n      (relu): ReLU(inplace=True)\n \
+    \     (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1),\
+    \ bias=False)\n      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n    )\n    (1): BasicBlock(\n      (conv1): Conv2d(64,\
+    \ 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn1):\
+    \ BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(64, 64, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(64,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n    )\n  )\n\
+    \  (layer2): Sequential(\n    (0): BasicBlock(\n      (conv1): Conv2d(64, 128,\
+    \ kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)\n      (bn1):\
+    \ BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(128, 128, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(128,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n      (downsample):\
+    \ Sequential(\n        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(2, 2),\
+    \ bias=False)\n        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n      )\n    )\n    (1): BasicBlock(\n      (conv1):\
+    \ Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)\n\
+    \      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(128, 128, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(128,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n    )\n  )\n\
+    \  (layer3): Sequential(\n    (0): BasicBlock(\n      (conv1): Conv2d(128, 256,\
+    \ kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)\n      (bn1):\
+    \ BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(256, 256, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(256,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n      (downsample):\
+    \ Sequential(\n        (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(2, 2),\
+    \ bias=False)\n        (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n      )\n    )\n    (1): BasicBlock(\n      (conv1):\
+    \ Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)\n\
+    \      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(256, 256, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(256,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n    )\n  )\n\
+    \  (layer4): Sequential(\n    (0): BasicBlock(\n      (conv1): Conv2d(256, 512,\
+    \ kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)\n      (bn1):\
+    \ BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(512, 512, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(512,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n      (downsample):\
+    \ Sequential(\n        (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(2, 2),\
+    \ bias=False)\n        (1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n      )\n    )\n    (1): BasicBlock(\n      (conv1):\
+    \ Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)\n\
+    \      (bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \      (relu): ReLU(inplace=True)\n      (conv2): Conv2d(512, 512, kernel_size=(3,\
+    \ 3), stride=(1, 1), padding=(1, 1), bias=False)\n      (bn2): BatchNorm2d(512,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n    )\n  )\n\
+    \  (avgpool): AdaptiveAvgPool2d(output_size=(1, 1))\n  (fc): Linear(in_features=512,\
+    \ out_features=1000, bias=True)\n)"
+optimizer:
+  computed: "SGD (\nParameter Group 0\n    dampening: 0\n    differentiable: False\n\
+    \    foreach: None\n    lr: 0.01\n    maximize: False\n    momentum: 0.9\n   \
+    \ nesterov: False\n    weight_decay: 0.0001\n)"
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: optimizer
+  options: []
+  order: 7
+  type: <class 'torch.optim.sgd.SGD'>
+  value: "SGD (\nParameter Group 0\n    dampening: 0\n    differentiable: False\n\
+    \    foreach: None\n    lr: 0.01\n    maximize: False\n    momentum: 0.9\n   \
+    \ nesterov: False\n    weight_decay: 0.0001\n)"
+optimizer.adjust_lr:
+  computed: true
+  is_explicitly_specified: true
+  is_hyperparam: false
+  is_meta: false
+  name: optimizer.adjust_lr
+  options: []
+  order: 9
+  type: <class 'bool'>
+  value: true
+optimizer.learning_rate:
+  computed: 0.001
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: optimizer.learning_rate
+  options: []
+  order: 8
+  type: <class 'float'>
+  value: 0.001
+optimizer.lr_milestones:
+  computed:
+  - - 0
+    - 0.01
+  - - 10
+    - 0.1
+  - - 20
+    - 0.18
+  - - 30
+    - 0.1
+  - - 40
+    - 0.01
+  - - 50
+    - 0
+  is_explicitly_specified: true
+  is_hyperparam: false
+  is_meta: false
+  name: optimizer.lr_milestones
+  options: []
+  order: 10
+  type: <class 'list'>
+  value:
+  - - 0
+    - 0.01
+  - - 10
+    - 0.1
+  - - 20
+    - 0.18
+  - - 30
+    - 0.1
+  - - 40
+    - 0.01
+  - - 50
+    - 0
+optimizer.lr_schedule:
+  computed: <ignite.handlers.param_scheduler.PiecewiseLinear object at 0x000001F1108F8DD0>
+  is_explicitly_specified: true
+  is_hyperparam: false
+  is_meta: false
+  name: optimizer.lr_schedule
+  options: []
+  order: 11
+  type: <class 'ignite.handlers.param_scheduler.PiecewiseLinear'>
+  value: <ignite.handlers.param_scheduler.PiecewiseLinear object at 0x000001F1108F8DD0>
+optimizer.momentum:
+  computed: 0.9
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: optimizer.momentum
+  options: []
+  order: 12
+  type: <class 'float'>
+  value: 0.9
+optimizer.weight_decay:
+  computed: 0.0001
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: optimizer.weight_decay
+  options: []
+  order: 13
+  type: <class 'float'>
+  value: 0.0001
+train_batch_size:
+  computed: 500
+  is_explicitly_specified: true
+  is_hyperparam: false
+  is_meta: false
+  name: train_batch_size
+  options: []
+  order: 15
+  type: <class 'int'>
+  value: 500
+train_dataset:
+  computed: "Dataset STL10\n    Number of datapoints: 5000\n    Root location: ./data\n\
+    \    Split: train\n    StandardTransform\nTransform: Compose(\n              \
+    \ RandomHorizontalFlip(p=0.5)\n               ToTensor()\n               Normalize(mean=(0.4467,\
+    \ 0.4398, 0.4066), std=(0.2603, 0.2566, 0.2713))\n           )"
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: train_dataset
+  options: []
+  order: 14
+  type: <class 'torchvision.datasets.stl10.STL10'>
+  value: "Dataset STL10\n    Number of datapoints: 5000\n    Root location: ./data\n\
+    \    Split: train\n    StandardTransform\nTransform: Compose(\n              \
+    \ RandomHorizontalFlip(p=0.5)\n               ToTensor()\n               Normalize(mean=(0.4467,\
+    \ 0.4398, 0.4066), std=(0.2603, 0.2566, 0.2713))\n           )"
+train_loader_shuffle:
+  computed: true
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: train_loader_shuffle
+  options: []
+  order: 16
+  type: <class 'bool'>
+  value: true
+valid_batch_size:
+  computed: 500
+  is_explicitly_specified: true
+  is_hyperparam: false
+  is_meta: false
+  name: valid_batch_size
+  options: []
+  order: 18
+  type: <class 'int'>
+  value: 500
+valid_dataset:
+  computed: "Dataset STL10\n    Number of datapoints: 8000\n    Root location: ./data\n\
+    \    Split: test\n    StandardTransform\nTransform: Compose(\n               ToTensor()\n\
+    \               Normalize(mean=(0.4467, 0.4398, 0.4066), std=(0.2603, 0.2566,\
+    \ 0.2713))\n           )"
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: valid_dataset
+  options: []
+  order: 17
+  type: <class 'torchvision.datasets.stl10.STL10'>
+  value: "Dataset STL10\n    Number of datapoints: 8000\n    Root location: ./data\n\
+    \    Split: test\n    StandardTransform\nTransform: Compose(\n               ToTensor()\n\
+    \               Normalize(mean=(0.4467, 0.4398, 0.4066), std=(0.2603, 0.2566,\
+    \ 0.2713))\n           )"
+valid_loader_shuffle:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: false
+  name: valid_loader_shuffle
+  options: []
+  order: 19
+  type: <class 'bool'>
+  value: false
