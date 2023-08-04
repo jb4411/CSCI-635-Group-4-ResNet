@@ -428,7 +428,7 @@ def main():
     # Number of epochs
     num_epochs = 45
     # Dataset
-    dataset = DataSet.STL10
+    dataset = DataSet.CIFAR10
     # Number of layers for the resnet model
     num_layers = 18
     # Custom ResNet model
@@ -451,7 +451,7 @@ def main():
     # 60% acc on stl10
     lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
 
-    lr_milestones = [(0, 0.01), (10, 0.11), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
+    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
 
     #lr_milestones = [(0, 0.1), (num_layers/2, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
     adjust_lr = True
