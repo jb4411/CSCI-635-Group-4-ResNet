@@ -200,6 +200,7 @@ class Trainer:
             self._conf_override["optimizer.adjust_lr"] = True
             self._conf_override["optimizer.lr_milestones"] = self.lr_milestones
             self._conf_override["optimizer.lr_schedule"] = self.lr_schedule
+            self.lr_schedule(0)
         else:
             self._base_conf["optimizer.lr_milestones"] = None
             self._base_conf["optimizer.lr_schedule"] = None
@@ -215,14 +216,17 @@ class Trainer:
         v_range = range(len(self._data_loaders[Phase.VALID]))
         t_data = list(self._data_loaders[Phase.TRAIN])
         v_data = list(self._data_loaders[Phase.VALID])
-        t_acc = [0.0, 0.0, 0.0]
-        v_acc = [0.0, 0.0, 0.0]
-        acc_idx = 0
-
+        tracker.add({'loss.train': 0, 'accuracy.train': 0})
+        tracker.add({'loss.valid': 0, 'accuracy.valid': 0})
         experiment.create(name=self.run_name + text)
         experiment.configs(self._base_conf, self._conf_override)
         with experiment.start():
             for epoch in monit.loop(range(num_epochs)):
+                if adjust_lr:
+                    self.lr_schedule(epoch+1)
+                    for param_group in self.optimizer.param_groups:
+                        tracker.add({"lr": param_group['lr']})
+
                 self._train_seen = 0
                 self._train_correct = 0
                 self._valid_seen = 0
@@ -236,10 +240,9 @@ class Trainer:
                         (inputs, labels) = v_data[idx]
                     self.step(inputs, labels, phase, idx)
 
-                if adjust_lr:
-                    tracker.add({"learning_rate": self.lr_schedule(epoch)})
+                """if adjust_lr:
                     for param_group in self.optimizer.param_groups:
-                        tracker.add({"lr": param_group['lr']})
+                        tracker.add({"lr": param_group['lr']})"""
 
                 tracker.save()
                 tracker.new_line()
@@ -408,7 +411,9 @@ def main():
     # Number of layers for the resnet model
     num_layers = 18
 
-    lr_milestones = [(5, 0.4), (24, 0)]
+    lr_milestones = [(0, 0), (5, 0.4), (24, 0)]
+    #lr_milestones = [(0, 0), (15, 0.1), (30, 0.005), (35, 0)]
+    adjust_lr = True
 
     trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones)
     trainer.train_batch_size = 512
@@ -416,7 +421,7 @@ def main():
     # trainer.lr = 0.0001
 
     start = time.perf_counter()
-    trainer.train_model(num_epochs)
+    trainer.train_model(num_epochs, adjust_lr=adjust_lr)
     end = time.perf_counter()
     show_training_time(start, end)
 
