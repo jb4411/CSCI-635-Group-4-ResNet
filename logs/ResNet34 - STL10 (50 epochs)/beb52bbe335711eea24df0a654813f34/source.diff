@@ -1,0 +1,16 @@
+diff --git a/flexible_resnet.py b/flexible_resnet.py
+index dd56893..3a6bfae 100644
+--- a/flexible_resnet.py
++++ b/flexible_resnet.py
+@@ -431,9 +431,9 @@ def main():
+     # Number of epochs
+     num_epochs = 50
+     # Dataset
+-    dataset = DataSet.CIFAR10
++    dataset = DataSet.STL10
+     # Number of layers for the resnet model
+-    num_layers = 101
++    num_layers = 34
+     # Custom ResNet model
+     custom_model = None
+ 

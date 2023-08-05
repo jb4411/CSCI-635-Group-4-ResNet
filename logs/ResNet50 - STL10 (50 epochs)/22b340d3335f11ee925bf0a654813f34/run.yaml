@@ -1,0 +1,19 @@
+comment: ''
+commit: 418b91eb096d860878dd9dd2db64d44202dde19a
+commit_message: Adding runs on CIFAR-10 to GitHub. Run is using ResNet 101.
+distributed_rank: 0
+distributed_world_size: 0
+is_dirty: true
+load_run: null
+name: ResNet50 - STL10 (50 epochs)
+notes: ''
+python_file: C:\Users\Jesse\Documents\RIT Class Folders\Summer 2023\CSCI 635\Final
+  Project\CSCI-635-Group-4-ResNet\flexible_resnet.py
+repo_remotes:
+- https://github.com/jb4411/CSCI-635-Group-4-ResNet
+start_step: 0
+tags:
+- ResNet50 - STL10 (50 epochs)
+trial_date: '2023-08-05'
+trial_time: 03:10:19
+uuid: 22b340d3335f11ee925bf0a654813f34
