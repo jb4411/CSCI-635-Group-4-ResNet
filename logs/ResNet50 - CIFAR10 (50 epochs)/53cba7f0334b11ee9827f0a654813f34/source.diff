@@ -1,0 +1,51 @@
+diff --git a/flexible_resnet.py b/flexible_resnet.py
+index 6b14c89..361ec7e 100644
+--- a/flexible_resnet.py
++++ b/flexible_resnet.py
+@@ -166,6 +166,9 @@ class Trainer:
+ 
+         self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
+                                    weight_decay=self.weight_decay)
++
++        self.optimizer = optim.Adam(self.model.parameters(), weight_decay=self.weight_decay)
++
+         if lr_milestones is not None:
+             self.lr_milestones = lr_milestones
+             self.lr_schedule = PiecewiseLinear(self.optimizer, "lr", milestones_values=lr_milestones)
+@@ -430,7 +433,7 @@ def main():
+     # Dataset
+     dataset = DataSet.CIFAR10
+     # Number of layers for the resnet model
+-    num_layers = 18
++    num_layers = 50
+     # Custom ResNet model
+     custom_model = None
+ 
+@@ -448,19 +451,24 @@ def main():
+     # almost 60% acc on stl10
+     lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.2), (30, 0.1), (40, 0.01), (50, 0)]
+ 
+-    # 60% acc on stl10
++    # 60% acc on stl10 - resnet18
+     lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
+ 
+     #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.11), (40, 0.01), (50, 0)]
+ 
+     #lr_milestones = [(0, 0.1), (num_layers/2, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
+-    adjust_lr = True
++    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (35, 0.1), (40, 0.01), (50, 0)]
++
++    lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
++
++    adjust_lr = False
++    #adjust_lr = True
+ 
+     trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, custom_model=custom_model)
+     #trainer.weight_decay = 0.001
+     trainer.train_batch_size = 500
+     trainer.valid_batch_size = 500
+-    # trainer.lr = 0.0001
++    #trainer.lr = 0.02
+ 
+     start = time.perf_counter()
+     trainer.train_model(num_epochs, adjust_lr=adjust_lr)

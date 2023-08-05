@@ -1,0 +1,22 @@
+comment: ''
+commit: 1ed9cb89ebd2ddd8783a8d4bb56fdb2f4db08712
+commit_message: 'Merge pull request #1 from jb4411/adding_learning_rate_schedule
+
+
+  Adding learning rate schedule'
+distributed_rank: 0
+distributed_world_size: 0
+is_dirty: true
+load_run: null
+name: ResNet34 - CIFAR10 (50 epochs)
+notes: ''
+python_file: C:\Users\Jesse\Documents\RIT Class Folders\Summer 2023\CSCI 635\Final
+  Project\CSCI-635-Group-4-ResNet\flexible_resnet.py
+repo_remotes:
+- https://github.com/jb4411/CSCI-635-Group-4-ResNet
+start_step: 0
+tags:
+- ResNet34 - CIFAR10 (50 epochs)
+trial_date: '2023-08-04'
+trial_time: '20:51:41'
+uuid: 3db1b1df332a11ee915bf0a654813f34
