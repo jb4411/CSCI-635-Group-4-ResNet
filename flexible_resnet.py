@@ -246,6 +246,7 @@ class Trainer:
             adjust_lr: if optimizer learning rate should be adjusted using learning rate milestones, (default: False)
 
         """
+        start = time.perf_counter()
 
         if adjust_lr:
             self._base_conf["lr"] = None
@@ -302,6 +303,9 @@ class Trainer:
                     tracker.add({"lr": param_group['lr']})
 
             tracker.save()
+
+        end = time.perf_counter()
+        show_training_time(start, end)
 
     def _step(self, inputs, labels, phase: Phase, batch_idx: int):
         inputs = inputs.to(self.device)
@@ -475,80 +479,3 @@ def show_training_time(start: float, end: float):
     minutes = int((diff % hr) / mn)
     m_suffix = 's' if minutes > 1 else ''
     print(f"{text} {hours} hour{h_suffix} {minutes} minute{m_suffix} {diff % mn} seconds")
-
-
-def main():
-    # Number of epochs
-    num_epochs = 50
-    # Dataset
-    dataset = DataSet.STL10
-    # Number of layers for the resnet model
-    num_layers = 18
-    # Custom ResNet model
-    custom_model = None
-
-    lr_milestones = [(0, 0), (5, 0.4), (24, 0)]
-    lr_milestones = [(0, 0), (15, 0.1), (16, 0.105), (30, 0.005), (35, 0)]
-    lr_milestones = [(0, 0), (10, 0.01), (30, 0)]
-    lr_milestones = [(0, 0), (15, 0.1), (20, 0.05), (25, 0.01), (30, 0)]
-    lr_milestones = [(0, 0), (10, 0.1), (20, 0.05), (25, 0.01), (30, 0)]
-    lr_milestones = [(0, 0), (15, 0.1), (25, 0.01), (30, 0)]
-    lr_milestones = [(0, 0.1), (10, 0.12), (20, 0.1), (30, 0.01), (50, 0)]
-
-    # used for 4 runs
-    lr_milestones = [(0, 0.1), (10, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
-
-    # almost 60% acc on stl10
-    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.2), (30, 0.1), (40, 0.01), (50, 0)]
-
-    # 60% acc on stl10 - resnet18
-    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
-
-    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.11), (40, 0.01), (50, 0)]
-
-    # lr_milestones = [(0, 0.1), (num_layers/2, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
-    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (35, 0.1), (40, 0.01), (50, 0)]
-
-    # lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
-
-    # lr_milestones = [(0, 0.015), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
-
-    # lr_milestones = [(0, 0.01), (10, 0.1), (40, 0.18), (60, 0.1), (80, 0.01), (100, 0)]
-
-    # lr_milestones = [(0, 0.0001), (20, 0.001), (50, 0.1), (80, 0.01), (100, 0)]
-
-    # lr_milestones = [(0, 0.1), (50, 0.1), (51, 0.01), (75, 0.01), (76, 0.001), (100, 0.001)]
-
-    # lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
-
-    # lr_milestones = [(0, 0.01), (10, 0.1), (70, 0.1), (80, 0.01), (100, 0)]
-
-    # lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.03), (50, 0.01)]
-
-    # new 60%
-    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.04), (50, 0.01)]
-
-    # 60 :')
-    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.175), (30, 0.1), (40, 0.01), (50, 0)]
-
-    # why - 60% again
-    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.17), (30, 0.1), (40, 0.005), (50, 0)]
-    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.13), (30, 0.1), (40, 0.005), (50, 0)]
-
-    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.175), (30, 0.1), (40, 0.01), (50, 0)]
-    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.15), (30, 0.1), (40, 0.01), (50, 0)]
-
-    adjust_lr = False
-    adjust_lr = True
-    show_lr = True
-
-    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, custom_model=custom_model, optimizer=optim.SGD)
-
-    start = time.perf_counter()
-    trainer.train_model(num_epochs, show_lr=show_lr, adjust_lr=adjust_lr)
-    end = time.perf_counter()
-    show_training_time(start, end)
-
-
-if __name__ == '__main__':
-    main()
