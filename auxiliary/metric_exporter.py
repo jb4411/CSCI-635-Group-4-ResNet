@@ -30,7 +30,7 @@ def main():
         if run_id.strip() == "":
             return
 
-    base_path = os.path.join(os.getcwd(), "logs", "resnet")
+    base_path = os.path.join(os.getcwd(), "../logs", "resnet")
 
     while True:
         path = os.path.join(base_path, run_id)
