@@ -13,6 +13,8 @@ You can install the remaining requirements using PIP.
 pip install -r requirements.txt
 ```
 
+### Training Visualization
+
 In order to view run metrics, before training a model be sure to start the 
 [LabML server](https://github.com/labmlai/labml).
 The local server can be easily started using the appropriate script.
@@ -23,4 +25,11 @@ Windows: [start_labml_server.bat](start_labml_server.bat)
 
 Windows using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) to run the server: [WSL_start_labml_server.bat](WSL_start_labml_server.bat)
 
-Run configurations can be changed in the main() method in [flexible_resnet.py](flexible_resnet.py?plain=1#L336)
+### Training a ResNet Model
+
+Training configurations can be changed in the main() method in [main.py](main.py?plain=1#L4)
+
+Once you have started the LabML server, to begin training simply run [main.py](main.py).
+```
+python main.py
+```
