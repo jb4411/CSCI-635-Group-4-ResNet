@@ -145,7 +145,7 @@ class Trainer:
     _conf_override: dict
 
     def __init__(self, dataset: DataSet, num_layers: int, run_name=None, lr_milestones=None, num_workers=0,
-                 custom_model=None):
+                 custom_model=None, optimizer: Type[Union[optim.SGD, optim.Adam]] = optim.Adam):
         self._device_info = DeviceInfo(use_cuda=torch.cuda.is_available(), cuda_device=0)
         self.dataset = dataset
         self._data_loaders, cfg = setup_dataset(self.dataset, self.train_batch_size, self.valid_batch_size,
@@ -164,10 +164,11 @@ class Trainer:
         else:
             self.model, self.layer_blocks, self.block_type = custom_model(self.device)
 
-        self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
-                                   weight_decay=self.weight_decay)
-
-        self.optimizer = optim.Adam(self.model.parameters(), weight_decay=self.weight_decay)
+        if optimizer == optim.SGD:
+            self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
+                                       weight_decay=self.weight_decay)
+        elif optimizer == optim.Adam:
+            self.optimizer = optim.Adam(self.model.parameters(), weight_decay=self.weight_decay)
 
         if lr_milestones is not None:
             self.lr_milestones = lr_milestones
@@ -214,7 +215,7 @@ class Trainer:
             if self._base_conf[param] != temp[param]:
                 self._conf_override[param] = temp[param]
 
-    def train_model(self, num_epochs: int = 10, adjust_lr=False):
+    def train_model(self, num_epochs: int = 10, show_lr=False, adjust_lr=False):
         if adjust_lr:
             self._base_conf["lr"] = None
             self._conf_override["optimizer.adjust_lr"] = True
@@ -244,6 +245,7 @@ class Trainer:
             for epoch in monit.loop(range(num_epochs)):
                 if adjust_lr:
                     self.lr_schedule(epoch+1)
+                if show_lr:
                     for param_group in self.optimizer.param_groups:
                         tracker.add({"lr": param_group['lr']})
 
@@ -267,10 +269,11 @@ class Trainer:
                 tracker.save()
                 tracker.new_line()
 
-            if adjust_lr:
+            if show_lr:
                 for param_group in self.optimizer.param_groups:
                     tracker.add({"lr": param_group['lr']})
-                tracker.save()
+
+            tracker.save()
 
     def step(self, inputs, labels, phase: Phase, batch_idx: int):
         inputs = inputs.to(self.device)
@@ -431,9 +434,9 @@ def main():
     # Number of epochs
     num_epochs = 50
     # Dataset
-    dataset = DataSet.STL10
+    dataset = DataSet.CIFAR10
     # Number of layers for the resnet model
-    num_layers = 152
+    num_layers = 18
     # Custom ResNet model
     custom_model = None
 
@@ -461,17 +464,37 @@ def main():
 
     lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
 
-    adjust_lr = False
-    #adjust_lr = True
+    #lr_milestones = [(0, 0.015), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
 
-    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, custom_model=custom_model)
+    #lr_milestones = [(0, 0.01), (10, 0.1), (40, 0.18), (60, 0.1), (80, 0.01), (100, 0)]
+
+    #lr_milestones = [(0, 0.0001), (20, 0.001), (50, 0.1), (80, 0.01), (100, 0)]
+
+    #lr_milestones = [(0, 0.1), (50, 0.1), (51, 0.01), (75, 0.01), (76, 0.001), (100, 0.001)]
+
+    lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
+
+    lr_milestones = [(0, 0.01), (10, 0.1), (70, 0.1), (80, 0.01), (100, 0)]
+
+    lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.03), (50, 0.01)]
+
+    # 60%
+    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.04), (50, 0.01)]
+
+    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.04), (50, 0.01)]
+
+    adjust_lr = False
+    adjust_lr = True
+    show_lr = True
+
+    trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, custom_model=custom_model, optimizer=optim.SGD)
     #trainer.weight_decay = 0.001
     trainer.train_batch_size = 500
     trainer.valid_batch_size = 500
     #trainer.lr = 0.02
 
     start = time.perf_counter()
-    trainer.train_model(num_epochs, adjust_lr=adjust_lr)
+    trainer.train_model(num_epochs, show_lr=show_lr, adjust_lr=adjust_lr)
     end = time.perf_counter()
     show_training_time(start, end)
 
