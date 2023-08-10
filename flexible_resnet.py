@@ -1,6 +1,6 @@
 import time
 from enum import Enum
-from typing import List, Any, Type, Union
+from typing import List, Any, Type, Union, Tuple
 
 import torch
 from torch import optim, nn
@@ -13,11 +13,10 @@ from torchvision.models import ResNet
 from torchvision.models.resnet import BasicBlock, Bottleneck, _resnet
 from ignite.handlers.param_scheduler import PiecewiseLinear
 
-from labml import tracker, experiment, monit, logger
+from labml import tracker, experiment, monit
 from labml_helpers.device import DeviceInfo
 
-from custom_resnet_models import ResNet20, ResNet32, ResNet44, ResNet56, ResNet110, ResNet1202, N_ResNet
-
+# Set up tracked metrics
 tracker.set_scalar("loss.*", True)
 tracker.set_scalar("accuracy.*", True)
 tracker.set_scalar("learning_rate", True)
@@ -51,7 +50,7 @@ def setup_dataset(dataset: DataSet, train_batch_size, valid_batch_size,
         train_data = datasets.CIFAR10('./data', train=True, download=True,
                                       transform=transforms.Compose([
                                           # Pad and crop
-                                          #transforms.RandomCrop(32, padding=4),
+                                          # transforms.RandomCrop(32, padding=4),
                                           # Random horizontal flip
                                           transforms.RandomHorizontalFlip(),
                                           transforms.ToTensor(),
@@ -68,7 +67,7 @@ def setup_dataset(dataset: DataSet, train_batch_size, valid_batch_size,
         train_data = datasets.STL10('./data', split="train", download=True,
                                     transform=transforms.Compose([
                                         # Pad and crop
-                                        #transforms.RandomCrop(96, padding=4),
+                                        # transforms.RandomCrop(96, padding=4),
                                         # Random horizontal flip
                                         transforms.RandomHorizontalFlip(),
                                         transforms.ToTensor(),
@@ -132,8 +131,6 @@ class Trainer:
     train_log_interval: int = 10
     # device to run on
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # Local webapi url or LabML token
-    token = 'http://localhost:5005/api/v1/track?'
     # internal
     _device_info: DeviceInfo
     _data_loaders: dict
@@ -144,17 +141,37 @@ class Trainer:
     _base_conf: dict
     _conf_override: dict
 
-    def __init__(self, dataset: DataSet, num_layers: int, run_name=None, lr_milestones=None, num_workers=0,
-                 custom_model=None, optimizer: Type[Union[optim.SGD, optim.Adam]] = optim.Adam):
+    def __init__(self, dataset: DataSet, num_layers: int, run_name=None, train_batch_size: int = 32,
+                 valid_batch_size: int = 128, num_workers=0, optimizer: Type[Union[optim.SGD, optim.Adam]] = optim.Adam,
+                 optimizer_momentum: float = 0.9, optimizer_weight_decay: float = 0.0001, optimizer_lr: float = 0.001,
+                 lr_milestones: List[Tuple[int, float]] = None, custom_model=None):
+        f"""A class to handle training ResNet models.
+        
+        Args:
+            dataset: dataset to train on
+            num_layers: number of layers for the ResNet model 
+            run_name: name of the run, (default=None). If None, run_name is set to "ResNet-{num_layers} - {dataset}".
+            train_batch_size: number of training samples to load per batch, (default=32).
+            valid_batch_size: number of validation samples to load per batch, (default=128).
+            num_workers: how many subprocesses to use for data loading, (default: 0). 
+                If 0, data will be loaded in the main process.
+            optimizer: the optimizer to use while training, (default: :class:`Adam<torch.optim.Adam>`).
+            optimizer_momentum: optimizer momentum, (default: 0.9).
+            optimizer_weight_decay: optimizer weight decay, (default: 0.0001).
+            optimizer_lr: optimizer learning rate, (default: 0.001).
+            lr_milestones: list of tuples (epoch, lr value), (default=None).
+            custom_model: a custom ResNet model to train, (default=None).
+        """
+
         self._device_info = DeviceInfo(use_cuda=torch.cuda.is_available(), cuda_device=0)
         self.dataset = dataset
-        self._data_loaders, cfg = setup_dataset(self.dataset, self.train_batch_size, self.valid_batch_size,
+        self._data_loaders, cfg = setup_dataset(self.dataset, train_batch_size, valid_batch_size,
                                                 num_workers=num_workers)
         self.train_dataset, self.valid_dataset, self.train_loader_shuffle, self.valid_loader_shuffle = cfg
 
         self.num_layers = num_layers
         if run_name is None:
-            self.run_name = f"ResNet{num_layers} - {str(self.dataset).replace('DataSet.', '')}"
+            self.run_name = f"ResNet-{num_layers} - {str(self.dataset).replace('DataSet.', '')}"
         else:
             self.run_name = run_name
 
@@ -165,10 +182,10 @@ class Trainer:
             self.model, self.layer_blocks, self.block_type = custom_model(self.device)
 
         if optimizer == optim.SGD:
-            self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
-                                       weight_decay=self.weight_decay)
+            self.optimizer = optim.SGD(self.model.parameters(), lr=optimizer_lr, momentum=optimizer_momentum,
+                                       weight_decay=optimizer_weight_decay)
         elif optimizer == optim.Adam:
-            self.optimizer = optim.Adam(self.model.parameters(), weight_decay=self.weight_decay)
+            self.optimizer = optim.Adam(self.model.parameters(), lr=optimizer_lr, weight_decay=optimizer_weight_decay)
 
         if lr_milestones is not None:
             self.lr_milestones = lr_milestones
@@ -177,8 +194,15 @@ class Trainer:
         self._base_conf = self.create_conf()
         self._conf_override = dict()
 
+        self.momentum = optimizer_momentum
+        self.weight_decay = optimizer_weight_decay
+        self.lr = optimizer_lr
+        self.train_batch_size = train_batch_size
+        self.valid_batch_size = valid_batch_size
+
     def create_conf(self):
         conf = {
+            "num_layers": self.num_layers,
             "block_type": self.block_type,
             "block_type.bottlenecks": None if self.block_type == BasicBlock else [64, 128, 256, 512],
             "dataset_name": str(self.dataset).replace("DataSet.", ""),
@@ -243,7 +267,7 @@ class Trainer:
         with experiment.start():
             for epoch in monit.loop(range(num_epochs)):
                 if adjust_lr:
-                    self.lr_schedule(epoch+1)
+                    self.lr_schedule(epoch + 1)
                 if show_lr:
                     for param_group in self.optimizer.param_groups:
                         tracker.add({"lr": param_group['lr']})
@@ -260,10 +284,6 @@ class Trainer:
                         phase = Phase.VALID
                         (inputs, labels) = v_data[idx]
                     self.step(inputs, labels, phase, idx)
-
-                """if adjust_lr:
-                    for param_group in self.optimizer.param_groups:
-                        tracker.add({"lr": param_group['lr']})"""
 
                 tracker.save()
                 tracker.new_line()
@@ -456,50 +476,45 @@ def main():
     # 60% acc on stl10 - resnet18
     lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
 
-    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.11), (40, 0.01), (50, 0)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.11), (40, 0.01), (50, 0)]
 
-    #lr_milestones = [(0, 0.1), (num_layers/2, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
-    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (35, 0.1), (40, 0.01), (50, 0)]
+    # lr_milestones = [(0, 0.1), (num_layers/2, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (35, 0.1), (40, 0.01), (50, 0)]
 
-    #lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
 
-    #lr_milestones = [(0, 0.015), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
+    # lr_milestones = [(0, 0.015), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
 
-    #lr_milestones = [(0, 0.01), (10, 0.1), (40, 0.18), (60, 0.1), (80, 0.01), (100, 0)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (40, 0.18), (60, 0.1), (80, 0.01), (100, 0)]
 
-    #lr_milestones = [(0, 0.0001), (20, 0.001), (50, 0.1), (80, 0.01), (100, 0)]
+    # lr_milestones = [(0, 0.0001), (20, 0.001), (50, 0.1), (80, 0.01), (100, 0)]
 
-    #lr_milestones = [(0, 0.1), (50, 0.1), (51, 0.01), (75, 0.01), (76, 0.001), (100, 0.001)]
+    # lr_milestones = [(0, 0.1), (50, 0.1), (51, 0.01), (75, 0.01), (76, 0.001), (100, 0.001)]
 
-    #lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
 
-    #lr_milestones = [(0, 0.01), (10, 0.1), (70, 0.1), (80, 0.01), (100, 0)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (70, 0.1), (80, 0.01), (100, 0)]
 
-    #lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.03), (50, 0.01)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.03), (50, 0.01)]
 
     # new 60%
-    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.04), (50, 0.01)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.04), (50, 0.01)]
 
     # 60 :')
-    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.175), (30, 0.1), (40, 0.01), (50, 0)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.175), (30, 0.1), (40, 0.01), (50, 0)]
 
     # why - 60% again
-    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.17), (30, 0.1), (40, 0.005), (50, 0)]
-    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.13), (30, 0.1), (40, 0.005), (50, 0)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.17), (30, 0.1), (40, 0.005), (50, 0)]
+    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.13), (30, 0.1), (40, 0.005), (50, 0)]
 
     lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.175), (30, 0.1), (40, 0.01), (50, 0)]
-    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.15), (30, 0.1), (40, 0.01), (50, 0)]
-
+    # lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.15), (30, 0.1), (40, 0.01), (50, 0)]
 
     adjust_lr = False
     adjust_lr = True
     show_lr = True
 
     trainer = Trainer(dataset, num_layers, lr_milestones=lr_milestones, custom_model=custom_model, optimizer=optim.SGD)
-    #trainer.weight_decay = 0.001
-    trainer.train_batch_size = 500
-    trainer.valid_batch_size = 500
-    #trainer.lr = 0.02
 
     start = time.perf_counter()
     trainer.train_model(num_epochs, show_lr=show_lr, adjust_lr=adjust_lr)
