@@ -1,3 +1,13 @@
+"""
+file: flexible_resnet.py
+description: Methods and classes used to facilitate training various ResNet models.
+language: Python 3.11
+author: Jesse Burdick-Pless jb4411@rit.edu
+author: Archit Joshi aj6082@rit.edu
+author: Mona Udasi mu9326@rit.edu
+author: Parijat Kawale pk7145@rit.edu
+"""
+
 import time
 from enum import Enum
 from typing import List, Any, Type, Union, Tuple

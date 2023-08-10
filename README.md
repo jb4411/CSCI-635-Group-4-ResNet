@@ -27,7 +27,7 @@ Windows using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) to ru
 
 ### Training a ResNet Model
 
-Training configurations can be changed in the main() method in [main.py](main.py?plain=1#L4).
+Training configurations can be changed in the main() method in [main.py](main.py?plain=1#L15).
 Training can be done on either a CPU or a GPU.
 The device to use is selected automatically - if a CUDA compatible GPU is available, it will be used, 
 otherwise training will default to using your CPU.  
