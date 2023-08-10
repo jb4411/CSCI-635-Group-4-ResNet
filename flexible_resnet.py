@@ -41,6 +41,19 @@ class Phase(Enum):
 
 def setup_dataset(dataset: DataSet, train_batch_size, valid_batch_size,
                   train_loader_shuffle=True, valid_loader_shuffle=False, num_workers=0):
+    """Preprocess the target dataset.
+
+    Args:
+        dataset: dataset to preprocess.
+        train_batch_size: batch size for training.
+        valid_batch_size: batch size for validation.
+        train_loader_shuffle: whether training data is reshuffled every epoch, (default: True).
+        valid_loader_shuffle: whether validation data is reshuffled every epoch, (default: False).
+        num_workers: how many subprocesses to use for data loading, (default: 0).
+               If 0, data will be loaded in the main process.
+
+    Returns: data_loaders, (train_data, val_data, train_loader_shuffle, valid_loader_shuffle)
+    """
     mean = (0.5, 0.5, 0.5)
     std = (0.5, 0.5, 0.5)
     if dataset == DataSet.CIFAR10:
