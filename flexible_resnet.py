@@ -91,6 +91,23 @@ def setup_dataset(dataset: DataSet, train_batch_size, valid_batch_size,
 
 
 class Trainer:
+    """A class to handle training ResNet models.
+
+       Args:
+           dataset: dataset to train on
+           num_layers: number of layers for the ResNet model
+           run_name: name of the run, (default=None). If None, run_name is set to "ResNet-{num_layers} - {dataset}".
+           train_batch_size: number of training samples to load per batch, (default=32).
+           valid_batch_size: number of validation samples to load per batch, (default=128).
+           num_workers: how many subprocesses to use for data loading, (default: 0).
+               If 0, data will be loaded in the main process.
+           optimizer: the optimizer to use while training, (default: :class:`Adam<torch.optim.Adam>`).
+           optimizer_momentum: optimizer momentum, (default: 0.9).
+           optimizer_weight_decay: optimizer weight decay, (default: 0.0001).
+           optimizer_lr: optimizer learning rate, (default: 0.001).
+           lr_milestones: list of tuples (epoch, lr value), (default=None).
+           custom_model: a custom ResNet model to train, (default=None).
+       """
     # Name of this run
     run_name: str
     # Model
@@ -145,24 +162,6 @@ class Trainer:
                  valid_batch_size: int = 128, num_workers=0, optimizer: Type[Union[optim.SGD, optim.Adam]] = optim.Adam,
                  optimizer_momentum: float = 0.9, optimizer_weight_decay: float = 0.0001, optimizer_lr: float = 0.001,
                  lr_milestones: List[Tuple[int, float]] = None, custom_model=None):
-        f"""A class to handle training ResNet models.
-        
-        Args:
-            dataset: dataset to train on
-            num_layers: number of layers for the ResNet model 
-            run_name: name of the run, (default=None). If None, run_name is set to "ResNet-{num_layers} - {dataset}".
-            train_batch_size: number of training samples to load per batch, (default=32).
-            valid_batch_size: number of validation samples to load per batch, (default=128).
-            num_workers: how many subprocesses to use for data loading, (default: 0). 
-                If 0, data will be loaded in the main process.
-            optimizer: the optimizer to use while training, (default: :class:`Adam<torch.optim.Adam>`).
-            optimizer_momentum: optimizer momentum, (default: 0.9).
-            optimizer_weight_decay: optimizer weight decay, (default: 0.0001).
-            optimizer_lr: optimizer learning rate, (default: 0.001).
-            lr_milestones: list of tuples (epoch, lr value), (default=None).
-            custom_model: a custom ResNet model to train, (default=None).
-        """
-
         self._device_info = DeviceInfo(use_cuda=torch.cuda.is_available(), cuda_device=0)
         self.dataset = dataset
         self._data_loaders, cfg = setup_dataset(self.dataset, train_batch_size, valid_batch_size,
@@ -191,7 +190,7 @@ class Trainer:
             self.lr_milestones = lr_milestones
             self.lr_schedule = PiecewiseLinear(self.optimizer, "lr", milestones_values=lr_milestones)
 
-        self._base_conf = self.create_conf()
+        self._base_conf = self._create_conf()
         self._conf_override = dict()
 
         self.momentum = optimizer_momentum
@@ -200,7 +199,7 @@ class Trainer:
         self.train_batch_size = train_batch_size
         self.valid_batch_size = valid_batch_size
 
-    def create_conf(self):
+    def _create_conf(self):
         conf = {
             "num_layers": self.num_layers,
             "block_type": self.block_type,
@@ -232,13 +231,22 @@ class Trainer:
 
         return conf
 
-    def conf_overrides(self):
-        temp = self.create_conf()
+    def _conf_overrides(self):
+        temp = self._create_conf()
         for param in temp:
             if self._base_conf[param] != temp[param]:
                 self._conf_override[param] = temp[param]
 
     def train_model(self, num_epochs: int = 10, show_lr=False, adjust_lr=False):
+        """Train the ResNet model.
+
+        Args:
+            num_epochs: number of epochs to train for
+            show_lr: if optimizer learning rate show be logged and graphed, (default: False)
+            adjust_lr: if optimizer learning rate should be adjusted using learning rate milestones, (default: False)
+
+        """
+
         if adjust_lr:
             self._base_conf["lr"] = None
             self._conf_override["optimizer.adjust_lr"] = True
@@ -250,7 +258,8 @@ class Trainer:
             self._base_conf["optimizer.lr_schedule"] = None
 
         self._conf_override["epochs"] = num_epochs
-        self.conf_overrides()
+        self._conf_overrides()
+
         if num_epochs == 1:
             text = " (1 epoch)"
         else:
@@ -283,7 +292,7 @@ class Trainer:
                     else:
                         phase = Phase.VALID
                         (inputs, labels) = v_data[idx]
-                    self.step(inputs, labels, phase, idx)
+                    self._step(inputs, labels, phase, idx)
 
                 tracker.save()
                 tracker.new_line()
@@ -294,7 +303,7 @@ class Trainer:
 
             tracker.save()
 
-    def step(self, inputs, labels, phase: Phase, batch_idx: int):
+    def _step(self, inputs, labels, phase: Phase, batch_idx: int):
         inputs = inputs.to(self.device)
         labels = labels.to(self.device)
 
@@ -329,9 +338,9 @@ def generate_resnet(layers: List[int], num_classes: int = 10, block_type: Type[U
     """Generate a ResNet model with an arbitrary number of layers.
 
     Args:
-        layers (List[int]): A list that contains the number of blocks for each layer.
-        num_classes (int, optional): The number of classes for the classification task. Defaults to 1000.
-        block_type (Type[Union[BasicBlock, Bottleneck]]): The type of block to use
+        layers: list that contains the number of blocks for each layer.
+        num_classes: number of classes for the classification task. Defaults to 1000.
+        block_type: The type of block to use
     Returns:
         ResNet: The ResNet model.
     """
@@ -351,8 +360,8 @@ def calculate_total_layers(layers: List[int], block: Type[Union[BasicBlock, Bott
     """Calculate the total number of layers in a ResNet model.
 
     Args:
-        block (Type[Union[BasicBlock, Bottleneck]]): The block type, either BasicBlock or Bottleneck.
-        layers (List[int]): A list that contains the number of blocks for each layer.
+        layers: list that containing the number of blocks for each layer.
+        block: block type, either BasicBlock or Bottleneck.
 
     Returns:
         int: The total number of layers in the ResNet model.
@@ -372,8 +381,19 @@ def calculate_total_layers(layers: List[int], block: Type[Union[BasicBlock, Bott
     return total_layers
 
 
-def get_model(num_layers, device, block_type: Type[Union[BasicBlock, Bottleneck]] = None,
+def get_model(num_layers: int, device: torch._C.device, block_type: Type[Union[BasicBlock, Bottleneck]] = None,
               **kwargs: Any) -> (ResNet, List[int], Type[Union[BasicBlock, Bottleneck]]):
+    """Get a ResNet model with {num_layers} layers.
+
+    Args:
+        num_layers: number of layers the returned ResNet model should have.
+        device: device the model will be trained on .
+        block_type: type of residual block the model should use, (default: None). If None, block_type is set to
+            :class:`BasicBlock<torchvision.models.resnet.BasicBlock>` if num_layers is less than 50, if num_layers is greater than or equal to 50,
+            block_type is set to :class:`Bottleneck<torchvision.models.resnet.Bottleneck>`.
+
+    Returns: model, layers, block_type
+    """
     if num_layers in [18, 34, 50, 101, 152]:
         pre_defined = {
             18: (models.resnet18, [2, 2, 2, 2], BasicBlock),
@@ -417,7 +437,15 @@ def get_model(num_layers, device, block_type: Type[Union[BasicBlock, Bottleneck]
     return model, layers, block_type
 
 
-def show_training_time(start, end):
+def show_training_time(start: float, end: float):
+    """Display the amount of time traing took in a human readable format.
+    :class:`Adam<torch.optim.Adam>`
+    Args:
+        start: result returned by :class:`time.perf_counter()<time.perf_counter()>` before calling
+            :class:`Trainer.train_model()<Trainer.train_model()>`.
+        end: result returned by :class:`time.perf_counter()<time.perf_counter()>` after calling
+            :class:`Trainer.train_model()<Trainer.train_model()>`.
+    """
     text = "Training took"
     text = "Training time ="
     diff = end - start
