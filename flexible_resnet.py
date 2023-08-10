@@ -107,8 +107,8 @@ class Trainer:
     """A class to handle training ResNet models.
 
        Args:
-           dataset: dataset to train on
-           num_layers: number of layers for the ResNet model
+           dataset: dataset to train on.
+           num_layers: number of layers for the ResNet model.
            run_name: name of the run, (default=None). If None, run_name is set to "ResNet-{num_layers} - {dataset}".
            train_batch_size: number of training samples to load per batch, (default=32).
            valid_batch_size: number of validation samples to load per batch, (default=128).
@@ -157,11 +157,11 @@ class Trainer:
     momentum = 0.9
     # Optimizer weight_decay
     weight_decay = 0.0001
-    # interval at which training results should be logged
+    # Interval at which training results should be logged
     train_log_interval: int = 10
-    # device to run on
+    # Device to run on
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # internal
+    # Internal
     _device_info: DeviceInfo
     _data_loaders: dict
     _train_seen: int = 0
@@ -254,9 +254,9 @@ class Trainer:
         """Train the ResNet model.
 
         Args:
-            num_epochs: number of epochs to train for
-            show_lr: if optimizer learning rate show be logged and graphed, (default: False)
-            adjust_lr: if optimizer learning rate should be adjusted using learning rate milestones, (default: False)
+            num_epochs: number of epochs to train for.
+            show_lr: if optimizer learning rate should be logged and graphed, (default: False).
+            adjust_lr: if optimizer learning rate should be adjusted using learning rate milestones, (default: False).
 
         """
         start = time.perf_counter()
@@ -356,8 +356,8 @@ def generate_resnet(layers: List[int], num_classes: int = 10, block_type: Type[U
 
     Args:
         layers: list that contains the number of blocks for each layer.
-        num_classes: number of classes for the classification task. Defaults to 1000.
-        block_type: The type of block to use
+        num_classes: number of classes for the classification task, (default: 1000).
+        block_type: The type of block to use.
     Returns:
         ResNet: The ResNet model.
     """
@@ -377,7 +377,7 @@ def calculate_total_layers(layers: List[int], block: Type[Union[BasicBlock, Bott
     """Calculate the total number of layers in a ResNet model.
 
     Args:
-        layers: list that containing the number of blocks for each layer.
+        layers: list containing the number of blocks for each layer.
         block: block type, either BasicBlock or Bottleneck.
 
     Returns:
@@ -404,10 +404,10 @@ def get_model(num_layers: int, device: torch._C.device, block_type: Type[Union[B
 
     Args:
         num_layers: number of layers the returned ResNet model should have.
-        device: device the model will be trained on .
+        device: device the model will be trained on.
         block_type: type of residual block the model should use, (default: None). If None, block_type is set to
-            :class:`BasicBlock<torchvision.models.resnet.BasicBlock>` if num_layers is less than 50, if num_layers is greater than or equal to 50,
-            block_type is set to :class:`Bottleneck<torchvision.models.resnet.Bottleneck>`.
+            :class:`BasicBlock<torchvision.models.resnet.BasicBlock>` if num_layers is less than 50, if num_layers is
+            greater than or equal to 50, block_type is set to :class:`Bottleneck<torchvision.models.resnet.Bottleneck>`.
 
     Returns: model, layers, block_type
     """
@@ -455,7 +455,7 @@ def get_model(num_layers: int, device: torch._C.device, block_type: Type[Union[B
 
 
 def show_training_time(start: float, end: float):
-    """Display the amount of time traing took in a human readable format.
+    """Display the amount of time training took in a human readable format.
     :class:`Adam<torch.optim.Adam>`
     Args:
         start: result returned by :class:`time.perf_counter()<time.perf_counter()>` before calling

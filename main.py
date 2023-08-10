@@ -5,7 +5,7 @@ def main():
     # Number of epochs
     num_epochs = 50
     # Dataset
-    dataset = DataSet.STL10
+    dataset = DataSet.CIFAR10
     # Number of layers for the resnet model
     num_layers = 18
 
