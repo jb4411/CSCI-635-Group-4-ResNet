@@ -178,7 +178,6 @@ class Trainer:
         self._conf_override = dict()
 
     def create_conf(self):
-        # TODO - WIP: need to correctly implement saving config data to the run info
         conf = {
             "block_type": self.block_type,
             "block_type.bottlenecks": None if self.block_type == BasicBlock else [64, 128, 256, 512],
@@ -434,7 +433,7 @@ def main():
     # Number of epochs
     num_epochs = 50
     # Dataset
-    dataset = DataSet.CIFAR10
+    dataset = DataSet.STL10
     # Number of layers for the resnet model
     num_layers = 18
     # Custom ResNet model
@@ -462,7 +461,7 @@ def main():
     #lr_milestones = [(0, 0.1), (num_layers/2, 0.2), (20, 0.1), (30, 0.01), (50, 0)]
     #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (35, 0.1), (40, 0.01), (50, 0)]
 
-    lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
+    #lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
 
     #lr_milestones = [(0, 0.015), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.01), (50, 0)]
 
@@ -472,16 +471,25 @@ def main():
 
     #lr_milestones = [(0, 0.1), (50, 0.1), (51, 0.01), (75, 0.01), (76, 0.001), (100, 0.001)]
 
-    lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
+    #lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.01), (50, 0)]
 
-    lr_milestones = [(0, 0.01), (10, 0.1), (70, 0.1), (80, 0.01), (100, 0)]
+    #lr_milestones = [(0, 0.01), (10, 0.1), (70, 0.1), (80, 0.01), (100, 0)]
 
-    lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.03), (50, 0.01)]
+    #lr_milestones = [(0, 0.01), (10, 0.1), (30, 0.1), (40, 0.03), (50, 0.01)]
 
-    # 60%
-    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.04), (50, 0.01)]
+    # new 60%
+    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.04), (50, 0.01)]
 
-    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.18), (30, 0.1), (40, 0.04), (50, 0.01)]
+    # 60 :')
+    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.175), (30, 0.1), (40, 0.01), (50, 0)]
+
+    # why - 60% again
+    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.17), (30, 0.1), (40, 0.005), (50, 0)]
+    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.13), (30, 0.1), (40, 0.005), (50, 0)]
+
+    lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.175), (30, 0.1), (40, 0.01), (50, 0)]
+    #lr_milestones = [(0, 0.01), (10, 0.1), (20, 0.15), (30, 0.1), (40, 0.01), (50, 0)]
+
 
     adjust_lr = False
     adjust_lr = True
